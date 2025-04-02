@@ -103,3 +103,5 @@ plt.axis('equal')
 
 plt.title('France electricity mix', y=1.07)
 plt.show()
+
+#olola
