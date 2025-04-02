@@ -50,12 +50,31 @@ class BusElectricity():
     def add_storage(self):
         pass
 
-
-
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
         self.objective_value = self.network.objective/1000000 # in 10^6 €
         self.electricity_price = self.network.objective/self.network.loads_t.p.sum()
+
+    def plot_line(self):
+        plt.plot(self.network.loads_t.p['load'][0:96], color='black', label='demand')
+        colors=['blue', 'orange', 'brown']
+        for i, generator in enumerate(self.network.generators_t.p.columns):
+            plt.plot(self.network.generators_t.p[str(generator)][0:96], color=colors[i], label=str(generator))
+        plt.legend(fancybox=True, loc='best')
+        plt.show()
+
+    def plot_pie(self):
+        labels = [str(generator) for generator in self.network.generators_t.p.columns]
+        sizes = [self.network.generators_t.p[generator].sum() for generator in self.network.generators_t.p.columns]
+        colors=['blue', 'orange', 'brown']
+        plt.pie(sizes,
+                colors=colors,
+                labels=labels,
+                wedgeprops={'linewidth':0})
+        plt.axis('equal')
+
+        plt.title('Electricity mix', y=1.07)
+        plt.show()        
 
 # Load Data
 df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_col = 0)
@@ -76,32 +95,5 @@ france_net.add_generator('OCGT', 560000, 0.033*560000, 21.6, 25, 0.39, 10)
 # Optimize
 france_net.optimize()
 
-network = france_net.network
-
-
-plt.plot(network.loads_t.p['load'][0:96], color='black', label='demand')
-plt.plot(network.generators_t.p['onshorewind'][0:96], color='blue', label='onshore wind')
-plt.plot(network.generators_t.p['solar'][0:96], color='orange', label='solar')
-plt.plot(network.generators_t.p['OCGT'][0:96], color='brown', label='gas (OCGT)')
-plt.legend(fancybox=True, loc='best')
-plt.show()
-
-labels = ['onshore wind',
-          'solar',
-          'gas (OCGT)']
-sizes = [network.generators_t.p['onshorewind'].sum(),
-         network.generators_t.p['solar'].sum(),
-         network.generators_t.p['OCGT'].sum()]
-
-colors=['blue', 'orange', 'brown']
-
-plt.pie(sizes,
-        colors=colors,
-        labels=labels,
-        wedgeprops={'linewidth':0})
-plt.axis('equal')
-
-plt.title('France electricity mix', y=1.07)
-plt.show()
-
-#olola
+france_net.plot_line()
+france_net.plot_pie()
