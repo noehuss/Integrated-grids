@@ -1,0 +1,6 @@
+Technology,CAPEX,fixed OPEX,marginal cost,Lifetime,Efficiency,CO2 emissions,Source,
+Nuclear,11900,100,8,60,1,4,RTE EPR FLAMANVILLE CO2:EDF ACV Nuclear,
+PV,1067,20,0,25,1,0,RTE Grande toiture,
+Wind Onshore,1300,40,0,25,1,0,RTE Eolien terrestre,
+Wind Offshore, 2600, 80, 0, 20, 1, 0, RTE Eolien offshore posé
+Hydro,1000,15,0,70,1,0,RTE Hydraulique hors step (contrainte potentiel max)
