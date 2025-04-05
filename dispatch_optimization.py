@@ -44,8 +44,15 @@ class BusElectricity():
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
                          marginal_cost=marginal_cost/efficiency)
 
-    def add_co2_constraints(self):
-        pass
+    def add_co2_constraints(self, co2_limit):
+        """Add a CO2 constraint, with a co2_limit in tCO2/year"""
+
+        self.network.add("GlobalConstraint",
+            "co2_limit",
+            type="primary_energy",
+            carrier_attribute="co2_emissions",
+            sense="<=",
+            constant=co2_limit)
 
     def add_storage(self):
         pass
