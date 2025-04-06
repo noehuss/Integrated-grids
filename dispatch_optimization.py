@@ -99,6 +99,31 @@ class BusElectricity():
         plt.title('Electricity mix', y=1.07)
         plt.show()
 
+    def plot_dispatch(self, time):
+        p_by_gen = self.network.generators_t.p.div(1e3)
+
+        if not self.network.storage_units.empty:
+            sto = self.network.storage_units_t.p.div(1e3)
+            p_by_gen = pd.concat([p_by_gen, sto], axis =1)
+        
+        fig, ax = plt.subplots(figsize=(6, 3))
+
+        p_by_gen.where(p_by_gen > 0).loc[f'{time}'].plot.area(ax=ax, linewidth = 0)
+
+        charge = p_by_gen.where(p_by_gen < 0).dropna(how="all", axis=1).loc[time]
+
+        if not charge.empty:
+            charge.plot.area(ax=ax, linewidth = 0)
+        
+        self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
+
+        plt.legend(loc=(0.7, 0))
+        ax.set_ylabel("GW")
+        ax.set_ylim(-200, 200)
+        plt.title (f'Optimal dispatch {time}')
+        plt.show()
+
+
 
 # Load Data
 df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_col = 0)
@@ -122,6 +147,7 @@ france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
 # Optimize
 france_net.optimize()
 
-france_net.plot_line()
-france_net.plot_pie()
-france_net.plot_storage()
+#france_net.plot_line()
+#france_net.plot_pie()
+#france_net.plot_storage()
+france_net.plot_dispatch('2015-11')
