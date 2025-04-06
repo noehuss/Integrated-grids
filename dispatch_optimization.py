@@ -33,7 +33,7 @@ class BusElectricity():
         """
         annualized_cost = utils.annuity(lifetime, 0.07)*capex*(1+opex_fixed/capex)
         carrier_name = technology_name
-        self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions)
+        self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions, overwrite = True)
         if data_prod is not None:
             CF = data_prod[self.country][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
             self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
@@ -54,12 +54,21 @@ class BusElectricity():
             sense="<=",
             constant=co2_limit)
 
-    def add_storage(self):
-        pass
+    def add_storage(self, technology_name: str, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
+        carrier_name = technology_name
+        self.network.add('Carrier', carrier_name, co2_emissions = CO2_emissions)
+        annualized_cost = utils.annuity(lifetime, 0.07)*(capex_en*energy_power_ratio + capex_pow + opex_fixed_en*energy_power_ratio + opex_fixed_pow)
+
+        self.network.add('StorageUnit', technology_name, 
+                         carrier = technology_name, bus = self.name, p_nom_extendable = True, 
+                         capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
+                         cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
+                         efficiency_store = efficiency, efficiency_dispatch = efficiency,)
+        
 
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
-        self.objective_value = self.network.objective/1000000 # in 10^6 €
+        self.objective_value = self.network.objective/1000000 # in 10^6 € (or M€)
         self.electricity_price = self.network.objective/self.network.loads_t.p.sum()
 
     def plot_line(self):
@@ -67,6 +76,13 @@ class BusElectricity():
         colors=['blue', 'orange', 'brown']
         for i, generator in enumerate(self.network.generators_t.p.columns):
             plt.plot(self.network.generators_t.p[str(generator)][0:96], color=colors[i], label=str(generator))
+        plt.legend(fancybox=True, loc='best')
+        plt.show()
+    
+    def plot_storage(self):
+        colors = ['yellow']
+        for i, storage_unit in enumerate(self.network.storage_units_t.p.columns):
+            plt.plot(self.network.storage_units_t.p[str(storage_unit)][0:96], color = colors[i], label = str(storage_unit))
         plt.legend(fancybox=True, loc='best')
         plt.show()
 
@@ -81,7 +97,8 @@ class BusElectricity():
         plt.axis('equal')
 
         plt.title('Electricity mix', y=1.07)
-        plt.show()        
+        plt.show()
+
 
 # Load Data
 df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_col = 0)
@@ -99,8 +116,12 @@ france_net.add_generator('solar', 425000, 0.03*425000, 0, 25, 1, 0, df_solar)
 # Add OCFT (Open Cycle Gas Turbine) generator
 france_net.add_generator('OCGT', 560000, 0.033*560000, 21.6, 25, 0.39, 10)
 
+#Add a storage unit (same as exercise session 9)
+france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
+
 # Optimize
 france_net.optimize()
 
 france_net.plot_line()
 france_net.plot_pie()
+france_net.plot_storage()
