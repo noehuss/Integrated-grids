@@ -76,7 +76,7 @@ class BusElectricity():
                          carrier = technology_name, bus = self.name, p_nom_extendable = True, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
-                         efficiency_store = efficiency, efficiency_dispatch = efficiency,)
+                         efficiency_store = efficiency, efficiency_dispatch = efficiency)
         
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
@@ -178,7 +178,7 @@ for key, df in technologies.items():
 france_net.add_co2_constraints()
 
 # Add a storage unit (same as exercise session 9)
-# france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
+france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
 
 # # Optimize
 france_net.optimize()

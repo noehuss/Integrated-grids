@@ -48,6 +48,7 @@ We considered data from PyPSA: Technology-data.
 Regarding the CO2-constraints, we took the historical emissions for France in the report of RTE.
 
 ### Storage
-
+Major Energy Storage Characteristics by Technology
+(Deloitte, 2015)
 
 
