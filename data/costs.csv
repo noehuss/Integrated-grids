@@ -1,6 +1,9 @@
-Technology,CAPEX,fixed OPEX,marginal cost,Lifetime,Efficiency,CO2 emissions,Source,
-Nuclear,11900,100,8,60,1,4,RTE EPR FLAMANVILLE CO2:EDF ACV Nuclear,
-PV,1067,20,0,25,1,0,RTE Grande toiture,
-Wind Onshore,1300,40,0,25,1,0,RTE Eolien terrestre,
-Wind Offshore, 2600, 80, 0, 20, 1, 0, RTE Eolien offshore posé
-Hydro,1000,15,0,70,1,0,RTE Hydraulique hors step (contrainte potentiel max)
+Technology,CAPEX,fixed OPEX,marginal cost,Lifetime,Efficiency,CO2 emissions, Currency year,Source,
+Nuclear,11900,100,8,60,1,0, 2020, RTE EPR FLAMANVILLE CO2:EDF ACV Nuclear,
+PV,1067,20,0,25,1,0, 2020, RTE Grande toiture,
+Wind Onshore,1300,40,0,25,1,0, 2020, RTE Eolien terrestre,
+Wind Offshore, 2600, 80, 0, 20, 1, 0, 2020, RTE Eolien offshore posé
+Hydro,1000,15,0,70,1,0, 2020,RTE Hydraulique hors step (contrainte potentiel max)
+OCGT,480.39,8.5374,4.762,25,0.4,0.198, 2015,Pypsa Technology-data, 
+CCGT,931.235,31.0054,4.6562,25,0.56,0.198, 2015,Pypsa Technology-data
+TACH2, 800, 20, 120, 30, 0.5, 0, 2020, RTE

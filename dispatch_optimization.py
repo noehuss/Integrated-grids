@@ -35,8 +35,14 @@ class BusElectricity():
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions, overwrite = True)
         if data_prod is not None:
-            CF = data_prod[self.country][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
-            self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
+            if technology_name == 'Hydro':
+                P_max = data_prod['Inflow [GWh]'][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
+                         bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
+                         marginal_cost=marginal_cost, p_max=P_max.values)
+            else:
+                CF = data_prod[self.country][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
                          marginal_cost=marginal_cost, p_max_pu=CF.values)
         else:
@@ -44,8 +50,14 @@ class BusElectricity():
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
                          marginal_cost=marginal_cost/efficiency)
 
-    def add_co2_constraints(self, co2_limit):
+    def add_co2_constraints(self, year):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""
+        #Regarding the historical emissions of the electrical mix in France, we have:
+        co2_limit_2019 = 20000000 #tCO2/year
+        co2_limit_1990 = 45000000 #tCO2/year
+        if year == 1990:
+            co2_limit = co2_limit_1990
+        co2_limit = co2_limit_2019
 
         self.network.add("GlobalConstraint",
             "co2_limit",
@@ -65,7 +77,6 @@ class BusElectricity():
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
                          efficiency_store = efficiency, efficiency_dispatch = efficiency,)
         
-
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
         self.objective_value = self.network.objective/1000000 # in 10^6 € (or M€)
@@ -130,8 +141,17 @@ df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_c
 df_onshorewind.index = pd.to_datetime(df_onshorewind.index)
 df_solar = pd.read_csv('data/pv_optimal.csv', sep=';', index_col=0)
 df_solar.index = pd.to_datetime(df_solar.index)
+df_offshorewind = pd.read_csv('data/offshore_wind_1979-2017.csv', sep=';', index_col=0)
+df_offshorewind.index = pd.to_datetime(df_solar.index)
+df_hydro = pd.read_csv('data/Hydro_Inflow_FR.csv', sep=',')
+df_hydro.index = pd.to_datetime(df_hydro[['Year', 'Month', 'Day']])
+df_hydro = df_hydro.resample('h').ffill()
+df_hydro['Inflow [GWh]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
+
+costs = pd.read_csv('data/costs.csv')
 
 france_net = BusElectricity('FRA', 2015)
+
 # Add onshore wind generator
 france_net.add_generator('onshorewind', 910000, 0.033*910000, 0, 30, 1, 0, df_onshorewind)
 
