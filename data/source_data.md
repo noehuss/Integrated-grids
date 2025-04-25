@@ -15,8 +15,8 @@ We mainly took our values for France in the Futurs Energétiques 2050, a prospec
 
 Columns:
 - Technology: Technology name of the power plant
-- CAPEX: In EUR/kW
-- fixed OPEX: In EUR/kW/year
+- CAPEX: In EUR/MW
+- fixed OPEX: In EUR/MW/year
 - marginal cost: In EUR/MWh of produced electricity
 - Lifetime: Expected lifetime of the technology
 - Efficiency: [0, 1], efficiency of the technology 
@@ -46,4 +46,8 @@ We considered data from PyPSA: Technology-data.
 
 ## The CO2 constraints
 Regarding the CO2-constraints, we took the historical emissions for France in the report of RTE.
+
+### Storage
+
+
 

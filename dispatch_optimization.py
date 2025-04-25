@@ -27,19 +27,20 @@ class BusElectricity():
         self.electricity_price = 0
         
 
-    def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,marginal_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
+    def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,opex_variable: float, fuel_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
         """
         Add a generator in our network object.
         """
         annualized_cost = utils.annuity(lifetime, 0.07)*capex*(1+opex_fixed/capex)
+        marginal_cost = opex_variable + fuel_cost/efficiency
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions, overwrite = True)
         if data_prod is not None:
             if technology_name == 'Hydro':
-                P_max = data_prod['Inflow [GWh]'][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                P_max_pu = data_prod['Inflow pu'][[hour.strftime('2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
                 self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
-                         marginal_cost=marginal_cost, p_max=P_max.values)
+                         marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max = 1000*data_prod['Inflow [GW]'].max())
             else:
                 CF = data_prod[self.country][[hour.strftime('%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
                 self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
@@ -48,20 +49,20 @@ class BusElectricity():
         else:
             self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
-                         marginal_cost=marginal_cost/efficiency)
+                         marginal_cost=marginal_cost, efficiency=efficiency)
 
-    def add_co2_constraints(self, year):
+    def add_co2_constraints(self, year_1990:bool=False):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""
         #Regarding the historical emissions of the electrical mix in France, we have:
         co2_limit_2019 = 20000000 #tCO2/year
         co2_limit_1990 = 45000000 #tCO2/year
-        if year == 1990:
+        if year_1990:
             co2_limit = co2_limit_1990
         co2_limit = co2_limit_2019
 
         self.network.add("GlobalConstraint",
             "co2_limit",
-            type="primary_energy",
+            #type="primary_energy",
             carrier_attribute="co2_emissions",
             sense="<=",
             constant=co2_limit)
@@ -84,9 +85,9 @@ class BusElectricity():
 
     def plot_line(self):
         plt.plot(self.network.loads_t.p['load'][0:96], color='black', label='demand')
-        colors=['blue', 'orange', 'brown']
+        #colors=['blue', 'orange', 'brown']
         for i, generator in enumerate(self.network.generators_t.p.columns):
-            plt.plot(self.network.generators_t.p[str(generator)][0:96], color=colors[i], label=str(generator))
+            plt.plot(self.network.generators_t.p[str(generator)][0:96], label=str(generator))
         plt.legend(fancybox=True, loc='best')
         plt.show()
     
@@ -100,9 +101,10 @@ class BusElectricity():
     def plot_pie(self):
         labels = [str(generator) for generator in self.network.generators_t.p.columns]
         sizes = [self.network.generators_t.p[generator].sum() for generator in self.network.generators_t.p.columns]
-        colors=['blue', 'orange', 'brown']
+        print(sizes)
+        #colors=['blue', 'orange', 'brown']
         plt.pie(sizes,
-                colors=colors,
+                #colors=colors,
                 labels=labels,
                 wedgeprops={'linewidth':0})
         plt.axis('equal')
@@ -146,28 +148,47 @@ df_offshorewind.index = pd.to_datetime(df_solar.index)
 df_hydro = pd.read_csv('data/Hydro_Inflow_FR.csv', sep=',')
 df_hydro.index = pd.to_datetime(df_hydro[['Year', 'Month', 'Day']])
 df_hydro = df_hydro.resample('h').ffill()
-df_hydro['Inflow [GWh]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
+df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
+df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
-costs = pd.read_csv('data/costs.csv')
+costs = pd.read_csv('data/costs.csv', index_col='Technology')
 
 france_net = BusElectricity('FRA', 2015)
 
-# Add onshore wind generator
-france_net.add_generator('onshorewind', 910000, 0.033*910000, 0, 30, 1, 0, df_onshorewind)
+technologies = {
+    "Nuclear": None,
+    "PV": df_solar,
+    "Wind Onshore": df_onshorewind,
+    "Wind Offshore": df_offshorewind,
+    "Hydro": df_hydro,
+    "OCGT": None,
+    "CCGT": None,
+    #"TACH2": None,
+}
 
-# Add solar PV generator
-france_net.add_generator('solar', 425000, 0.03*425000, 0, 25, 1, 0, df_solar)
+for key, df in technologies.items():
+    print(type(df))
+    print(key)
+    france_net.add_generator(key, costs.loc[key, 'CAPEX'], costs.loc[key, 'FOM'],
+                             costs.loc[key, 'VOM'], costs.loc[key, 'Fuel'], costs.loc[key, 'Lifetime'],
+                             costs.loc[key, 'Efficiency'], costs.loc[key, 'CO2'], df)
 
-# Add OCFT (Open Cycle Gas Turbine) generator
-france_net.add_generator('OCGT', 560000, 0.033*560000, 21.6, 25, 0.39, 10)
 
-#Add a storage unit (same as exercise session 9)
-france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
+# Add CO2 constraints
+france_net.add_co2_constraints()
 
-# Optimize
+# Add a storage unit (same as exercise session 9)
+# france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
+
+# # Optimize
 france_net.optimize()
 
-#france_net.plot_line()
-#france_net.plot_pie()
+france_net.plot_line()
+france_net.plot_pie()
 #france_net.plot_storage()
-france_net.plot_dispatch('2015-11')
+france_net.plot_dispatch('2015-01')
+
+print(france_net.network.generators)
+print(france_net.network.carriers)
+print(-france_net.network.global_constraints.mu)
+print(france_net.network.generators.marginal_cost)

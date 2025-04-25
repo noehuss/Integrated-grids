@@ -103,3 +103,5 @@ plt.axis('equal')
 
 plt.title('Electricity mix', y=1.07)
 plt.show()
+
+network.generators['p_nom_opt']
