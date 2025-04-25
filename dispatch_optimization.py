@@ -27,7 +27,7 @@ class BusElectricity():
         self.electricity_price = 0
         
 
-    def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,marginal_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
+    def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,marginal_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None, max_cap = 1000000):
         """
         Add a generator in our network object.
         """
@@ -41,8 +41,8 @@ class BusElectricity():
                          marginal_cost=marginal_cost, p_max_pu=CF.values)
         else:
             self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
-                         bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
-                         marginal_cost=marginal_cost/efficiency)
+                         bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, p_nom_max = max_cap,
+                         marginal_cost= marginal_cost / efficiency)
 
     def add_co2_constraints(self, co2_limit):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""
@@ -56,7 +56,7 @@ class BusElectricity():
 
     def add_storage(self, technology_name: str, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
         carrier_name = technology_name
-        self.network.add('Carrier', carrier_name, co2_emissions = CO2_emissions)
+        self.network.add('Carrier', carrier_name, co2_emissions = CO2_emissions, overwrite = True)
         annualized_cost = utils.annuity(lifetime, 0.07)*(capex_en*energy_power_ratio + capex_pow + opex_fixed_en*energy_power_ratio + opex_fixed_pow)
 
         self.network.add('StorageUnit', technology_name, 
@@ -138,7 +138,7 @@ france_net.add_generator('onshorewind', 910000, 0.033*910000, 0, 30, 1, 0, df_on
 # Add solar PV generator
 france_net.add_generator('solar', 425000, 0.03*425000, 0, 25, 1, 0, df_solar)
 
-# Add OCFT (Open Cycle Gas Turbine) generator
+# Add OCGT (Open Cycle Gas Turbine) generator
 france_net.add_generator('OCGT', 560000, 0.033*560000, 21.6, 25, 0.39, 10)
 
 #Add a storage unit (same as exercise session 9)

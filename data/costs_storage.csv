@@ -1,0 +1,4 @@
+Technology,Maximal capacity,CAPEX,fixed OPEX,marginal cost,Lifetime,Efficiency,CO2 emissions,Source,
+PHS, 8000, 1000, 15, 0, 50, 0.85, 0, RTE FE 2050
+
+technology_name: str, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int
