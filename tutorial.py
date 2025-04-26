@@ -15,7 +15,7 @@ network.add("Bus",
 # Load electricity demand data
 df_elec = pd.read_csv('data/electricity_demand.csv', sep=';', index_col=0) #in MWh
 df_elec.index = pd.to_datetime(df_elec.index) #change index to datetime
-country = 'DNK'
+country = 'FRA'
 
 # Add load to the bus
 network.add("Load", 

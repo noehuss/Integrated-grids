@@ -2,6 +2,7 @@ import pypsa
 import pandas as pd
 import matplotlib.pyplot as plt
 import utils
+import param
 
 class BusElectricity():
     def __init__(self, country:str, year:int):
@@ -83,33 +84,61 @@ class BusElectricity():
         self.objective_value = self.network.objective/1000000 # in 10^6 € (or M€)
         self.electricity_price = self.network.objective/self.network.loads_t.p.sum()
 
-    def plot_line(self):
-        plt.plot(self.network.loads_t.p['load'][0:96], color='black', label='demand')
-        #colors=['blue', 'orange', 'brown']
-        for i, generator in enumerate(self.network.generators_t.p.columns):
-            plt.plot(self.network.generators_t.p[str(generator)][0:96], label=str(generator))
+    def plot_line(self, start_date, end_date):
+        origin = pd.Timestamp(f"{self.year}-01-01 00:00")
+        start_index= int((start_date-origin).total_seconds()/3600)
+        end_index= int((end_date-origin).total_seconds()/3600)
+        plt.plot(self.network.loads_t.p['load'][start_index:end_index], color='black', label='Demand')
+        producers = [generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt !=0].index]
+        for i, generator in enumerate(producers):
+            plt.plot(self.network.generators_t.p[str(generator)][start_index:end_index], label=str(generator), color=param.colors[str(generator)])
         plt.legend(fancybox=True, loc='best')
+        plt.xlabel('Time')
+        plt.ylabel('Electricity production (MWh)')
+        plt.grid(linewidth='0.4', linestyle='--')
+        #plt.title('Electricity production dispatch')
         plt.show()
     
-    def plot_storage(self):
+    def plot_storage(self,start_date, end_date):
+        origin = pd.Timestamp(f"{self.year}-01-01 00:00")
+        start_index= int((start_date-origin).total_seconds()/3600)
+        end_index= int((end_date-origin).total_seconds()/3600)
         colors = ['yellow']
         for i, storage_unit in enumerate(self.network.storage_units_t.p.columns):
-            plt.plot(self.network.storage_units_t.p[str(storage_unit)][0:96], color = colors[i], label = str(storage_unit))
+            plt.plot(self.network.storage_units_t.p[str(storage_unit)][start_index:end_index], color = colors[i], label = str(storage_unit))
         plt.legend(fancybox=True, loc='best')
         plt.show()
 
     def plot_pie(self):
-        labels = [str(generator) for generator in self.network.generators_t.p.columns]
-        sizes = [self.network.generators_t.p[generator].sum() for generator in self.network.generators_t.p.columns]
-        print(sizes)
-        #colors=['blue', 'orange', 'brown']
+        labels = [generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt !=0].index]
+        sizes = [self.network.generators_t.p[generator].sum() for generator in labels]
+        colors = [param.colors[generator] for generator in labels]
         plt.pie(sizes,
-                #colors=colors,
+                colors=colors,
                 labels=labels,
+                autopct=lambda pct: f"{pct:.1f}%",
                 wedgeprops={'linewidth':0})
         plt.axis('equal')
 
-        plt.title('Electricity mix', y=1.07)
+        #plt.title('Electricity mix', y=1.07)
+        plt.show()
+
+    def plot_duration_curve(self):
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        producers = [generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt !=0].index]
+        for i, generator in enumerate(producers):
+            ax1.plot(self.network.generators_t.p[str(generator)].sort_values(ascending=False,ignore_index=True),
+                     color=param.colors[str(generator)],
+                     label=str(generator))
+            cf = self.network.generators_t.p[str(generator)].sort_values(ascending=False,ignore_index=True)/self.network.generators.p_nom_opt[generator]
+            ax2.plot(cf, color=param.colors[str(generator)],
+                     label=str(generator))
+        ax1.legend(fancybox=True, loc='best')
+        ax1.set(xlabel='Hours', ylabel='Electricity production (MW)')
+        ax1.grid(linewidth='0.4', linestyle='--')
+        ax2.legend(fancybox=True, loc='best')
+        ax2.set(xlabel='Hours', ylabel='Capacity factor')
+        ax2.grid(linewidth='0.4', linestyle='--')
         plt.show()
 
     def plot_dispatch(self, time):
@@ -132,63 +161,59 @@ class BusElectricity():
 
         plt.legend(loc=(0.7, 0))
         ax.set_ylabel("GW")
-        ax.set_ylim(-200, 200)
+        #ax.set_ylim(-200, 200)
         plt.title (f'Optimal dispatch {time}')
         plt.show()
 
 
 
-# Load Data
-df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_col = 0)
-df_onshorewind.index = pd.to_datetime(df_onshorewind.index)
-df_solar = pd.read_csv('data/pv_optimal.csv', sep=';', index_col=0)
-df_solar.index = pd.to_datetime(df_solar.index)
-df_offshorewind = pd.read_csv('data/offshore_wind_1979-2017.csv', sep=';', index_col=0)
-df_offshorewind.index = pd.to_datetime(df_solar.index)
-df_hydro = pd.read_csv('data/Hydro_Inflow_FR.csv', sep=',')
-df_hydro.index = pd.to_datetime(df_hydro[['Year', 'Month', 'Day']])
-df_hydro = df_hydro.resample('h').ffill()
-df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
-df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
-costs = pd.read_csv('data/costs.csv', index_col='Technology')
 
-france_net = BusElectricity('FRA', 2015)
+year =2015
+start_date_winter=pd.Timestamp(f"{year}-01-01 00:00")
+end_date_winter= pd.Timestamp(f"{year}-01-08 00:00")
+start_date_summer=pd.Timestamp(f"{year}-07-01 00:00")
+end_date_summer= pd.Timestamp(f"{year}-07-08 00:00")
+
+france_net = BusElectricity('FRA', year)
 
 technologies = {
     "Nuclear": None,
-    "PV": df_solar,
-    "Wind Onshore": df_onshorewind,
-    "Wind Offshore": df_offshorewind,
-    "Hydro": df_hydro,
+    "PV": param.df_solar,
+    "Wind Onshore": param.df_onshorewind,
+    "Wind Offshore": param.df_offshorewind,
+    "Hydro": param.df_hydro,
     "OCGT": None,
     "CCGT": None,
-    #"TACH2": None,
+    "TACH2": None,
 }
 
 for key, df in technologies.items():
-    print(type(df))
-    print(key)
-    france_net.add_generator(key, costs.loc[key, 'CAPEX'], costs.loc[key, 'FOM'],
-                             costs.loc[key, 'VOM'], costs.loc[key, 'Fuel'], costs.loc[key, 'Lifetime'],
-                             costs.loc[key, 'Efficiency'], costs.loc[key, 'CO2'], df)
+    france_net.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
+                            param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
+                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
 
 
 # Add CO2 constraints
-france_net.add_co2_constraints()
+# france_net.add_co2_constraints()
 
 # Add a storage unit (same as exercise session 9)
-france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
+# france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
 
 # # Optimize
 france_net.optimize()
 
-france_net.plot_line()
-france_net.plot_pie()
+#france_net.plot_duration_curve()
+france_net.plot_line(start_date_winter, end_date_winter)
+france_net.plot_line(start_date_summer, end_date_summer)
+#france_net.plot_pie()
 #france_net.plot_storage()
-france_net.plot_dispatch('2015-01')
+#france_net.plot_dispatch(f'{year}-01')
 
 print(france_net.network.generators)
 print(france_net.network.carriers)
 print(-france_net.network.global_constraints.mu)
 print(france_net.network.generators.marginal_cost)
+
+print([generator for generator in france_net.network.generators.loc[france_net.network.generators.p_nom_opt !=0].index])
+
