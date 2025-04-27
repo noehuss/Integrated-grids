@@ -18,6 +18,29 @@ df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 ### Costs
 costs = pd.read_csv('data/costs.csv', index_col='Technology')
 
+### CO2 emissions
+#### Regarding the historical emissions of the electrical mix in France, we have:
+co2_limit_2019 = 20000000 #tCO2/year
+co2_limit_1990 = 45000000 #tCO2/year
+
+# Param
+### Year simulation
+year =2015
+
+### Technologies
+technologies_france = {
+    "Nuclear": None,
+    "PV": df_solar,
+    "Wind Onshore": df_onshorewind,
+    "Wind Offshore": df_offshorewind,
+    "Hydro": df_hydro,
+    "OCGT": None,
+    "CCGT": None,
+    #"TACH2": None,
+}
+
+
+
 # Plot
 colors = {"Nuclear":"#ffe66d",
           "PV":"#ffa96c",
@@ -28,4 +51,6 @@ colors = {"Nuclear":"#ffe66d",
           "CCGT":"#d1a9a5",
           "TACH2": "#cdd176",
           "Storage1":"#ff6b6b",
-          "Storage2":"#1a535c"}
+          "Storage2":"#1a535c",
+          "tCO2":"#272932",
+          "elec":"#AA968A"}

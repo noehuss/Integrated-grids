@@ -5,7 +5,7 @@ import utils
 import param
 
 class BusElectricity():
-    def __init__(self, country:str, year:int):
+    def __init__(self, country:str, year:int, technologies):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
@@ -13,6 +13,7 @@ class BusElectricity():
         hours_in_year = pd.date_range(f'{self.year}-01-01 00:00Z',
                               f'{self.year}-12-31 23:00Z',
                               freq='h')
+        hours_in_year = hours_in_year[~((hours_in_year.month == 2) & (hours_in_year.day == 29))]
         self.network.set_snapshots(hours_in_year.values)
         self.network.add('Bus', self.name)
         # Load electricity demand data
@@ -26,6 +27,12 @@ class BusElectricity():
         
         self.objective_value = 0
         self.electricity_price = 0
+
+        for key, df in technologies.items():
+            self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
+                            param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
+                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
+
         
 
     def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,opex_variable: float, fuel_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
@@ -52,15 +59,8 @@ class BusElectricity():
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
                          marginal_cost=marginal_cost, efficiency=efficiency)
 
-    def add_co2_constraints(self, year_1990:bool=False):
+    def add_co2_constraints(self, co2_limit:float):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""
-        #Regarding the historical emissions of the electrical mix in France, we have:
-        co2_limit_2019 = 20000000 #tCO2/year
-        co2_limit_1990 = 45000000 #tCO2/year
-        if year_1990:
-            co2_limit = co2_limit_1990
-        co2_limit = co2_limit_2019
-
         self.network.add("GlobalConstraint",
             "co2_limit",
             #type="primary_energy",
@@ -165,55 +165,41 @@ class BusElectricity():
         plt.title (f'Optimal dispatch {time}')
         plt.show()
 
+    def return_production_mix(self) -> pd.DataFrame:
+        return self.network.generators_t.p.sum()
+    
+    def return_capacity_mix(self) -> pd.DataFrame:
+        return self.network.generators.p_nom_opt
 
 
-
-
-year =2015
-start_date_winter=pd.Timestamp(f"{year}-01-01 00:00")
-end_date_winter= pd.Timestamp(f"{year}-01-08 00:00")
-start_date_summer=pd.Timestamp(f"{year}-07-01 00:00")
-end_date_summer= pd.Timestamp(f"{year}-07-08 00:00")
-
-france_net = BusElectricity('FRA', year)
-
-technologies = {
-    "Nuclear": None,
-    "PV": param.df_solar,
-    "Wind Onshore": param.df_onshorewind,
-    "Wind Offshore": param.df_offshorewind,
-    "Hydro": param.df_hydro,
-    "OCGT": None,
-    "CCGT": None,
-    "TACH2": None,
-}
-
-for key, df in technologies.items():
-    france_net.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
-                            param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
-                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
+france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france)
 
 
 # Add CO2 constraints
-# france_net.add_co2_constraints()
+# france_net.add_co2_constraints(param.co2_limit_2019)
 
 # Add a storage unit (same as exercise session 9)
 # france_net.add_storage('Battery', 24678, 12894, 0, 0, 0, 20, 0.96, 0, 2)
 
 # # Optimize
-france_net.optimize()
+# france_net.optimize()
 
-#france_net.plot_duration_curve()
-france_net.plot_line(start_date_winter, end_date_winter)
-france_net.plot_line(start_date_summer, end_date_summer)
-#france_net.plot_pie()
-#france_net.plot_storage()
-#france_net.plot_dispatch(f'{year}-01')
+# #france_net.plot_duration_curve()
+# start_date_winter=pd.Timestamp(f"{param.year}-01-01 00:00")
+# end_date_winter= pd.Timestamp(f"{param.year}-01-08 00:00")
+# start_date_summer=pd.Timestamp(f"{param.year}-07-01 00:00")
+# end_date_summer= pd.Timestamp(f"{param.year}-07-08 00:00")
 
-print(france_net.network.generators)
-print(france_net.network.carriers)
-print(-france_net.network.global_constraints.mu)
-print(france_net.network.generators.marginal_cost)
+# france_net.plot_line(start_date_winter, end_date_winter)
+# france_net.plot_line(start_date_summer, end_date_summer)
+# france_net.plot_pie()
+# #france_net.plot_storage()
+# #france_net.plot_dispatch(f'{year}-01')
 
-print([generator for generator in france_net.network.generators.loc[france_net.network.generators.p_nom_opt !=0].index])
+# print(france_net.network.generators)
+# print(france_net.network.carriers)
+# print(-france_net.network.global_constraints.mu)
+# print(france_net.network.generators.marginal_cost)
+
+# print([generator for generator in france_net.network.generators.loc[france_net.network.generators.p_nom_opt !=0].index])
 
