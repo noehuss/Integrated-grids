@@ -1,5 +1,5 @@
 import pandas as pd
-
+import utils
 # Load data
 
 ### CF
@@ -17,6 +17,10 @@ df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
 ### Costs
 costs = pd.read_csv('data/costs.csv', index_col='Technology')
+for key in costs.index:
+    costs.loc[key, 'CAPEX'] = utils.cost_conversion(costs.loc[key, 'CAPEX'], costs.loc[key, 'Currency year'])
+    costs.loc[key, 'FOM'] = utils.cost_conversion(costs.loc[key, 'FOM'], costs.loc[key, 'Currency year'])
+    costs.loc[key, 'VOM'] = utils.cost_conversion(costs.loc[key, 'VOM'], costs.loc[key, 'Currency year'])
 
 ### CO2 emissions
 #### Regarding the historical emissions of the electrical mix in France, we have:

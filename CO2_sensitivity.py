@@ -3,19 +3,18 @@ import param
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pypsa
 
 co2_limits = np.linspace(param.co2_limit_2019/2, 3*param.co2_limit_1990, 10)
 df = pd.DataFrame(index=[key for key, df in param.technologies_france.items()])
 df_prices = pd.DataFrame()
 for co2_limit in co2_limits:
-    france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france)
+    france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france, network=pypsa.Network())
     france_net.add_co2_constraints(co2_limit)
     france_net.optimize()
     df[co2_limit] = france_net.return_production_mix()/1E6
     df_prices[co2_limit] = pd.concat([france_net.network.buses_t.marginal_price.mean()
                                      ,-france_net.network.global_constraints.mu])
-
-
 
 fig, ax1 = plt.subplots()
 ax1.stackplot(co2_limits, df,

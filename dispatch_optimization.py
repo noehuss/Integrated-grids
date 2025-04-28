@@ -5,11 +5,11 @@ import utils
 import param
 
 class BusElectricity():
-    def __init__(self, country:str, year:int, technologies):
+    def __init__(self, country:str, year:int, technologies, network=pypsa.Network()):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
-        self.network = pypsa.Network()
+        self.network = network
         hours_in_year = pd.date_range(f'{self.year}-01-01 00:00Z',
                               f'{self.year}-12-31 23:00Z',
                               freq='h')
@@ -32,7 +32,6 @@ class BusElectricity():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
                             param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
                             param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
-
         
 
     def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,opex_variable: float, fuel_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
@@ -58,6 +57,9 @@ class BusElectricity():
             self.network.add('Generator', carrier=carrier_name, name=carrier_name, 
                          bus = self.name, p_nom_extendable = True, capital_cost=annualized_cost, 
                          marginal_cost=marginal_cost, efficiency=efficiency)
+
+    def add_bus(self) -> pypsa.Network:
+        return self.network
 
     def add_co2_constraints(self, co2_limit:float):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""
@@ -172,8 +174,40 @@ class BusElectricity():
         return self.network.generators.p_nom_opt
 
 
-france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france)
+class NetworkElectricity():
+    def __init__(self, year:int):
+        self.network = pypsa.Network()
+        self.year = year
 
+    def add_country(self, country_name, technologies):
+        self.network = BusElectricity(country=country_name, year=self.year, technologies=technologies).add_bus()
+
+    def add_line(self, country0: str, country1: str, capacity: float, reactance: float, resistance: float, capital_cost: float, extendable: bool):
+        self.network.add('Line', f"{country0}-{country1}",
+                         bus0=f'{country0} electriciy',
+                         bus1=f'{country1} electriciy',
+                         s_nom=capacity,
+                         x=reactance,
+                         r=resistance,
+                         capital_cost=capital_cost,
+                         s_nom_extendable=extendable)
+    
+    def optimize(self):
+        self.network.optimize(solver_name='gurobi')
+        # self.objective_value = self.network.objective/1000000 # in 10^6 € (or M€)
+        # self.electricity_price = self.network.objective/self.network.loads_t.p.sum()
+
+
+#france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france)
+Countries = ['FRA', 'BEL', 'DEU']
+Europe_net = NetworkElectricity(param.year)
+
+for country in Countries:
+    Europe_net.add_country(country, technologies=param.technologies_france)
+    if country != "FRA":
+        Europe_net.add_line("FRA", country, 0, 1, 1, 0, False)
+
+Europe_net.optimize()
 
 # Add CO2 constraints
 # france_net.add_co2_constraints(param.co2_limit_2019)

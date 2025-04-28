@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-years = np.arange(start=1980, stop=2015, step=10)
+years = np.arange(start=1980, stop=2015, step=2)
 df = pd.DataFrame(index=[key for key, df in param.technologies_france.items()])
 
 for year in years:
@@ -20,6 +20,5 @@ for n, col in enumerate(df.columns):
     for patch in bplot['boxes']:
         patch.set_facecolor(param.colors[col])
 
-# ax.set_xticks(range(10))
-# ax.set_xticklabels(range(10))
+plt.grid(linewidth='0.4', linestyle='--')
 plt.show()
