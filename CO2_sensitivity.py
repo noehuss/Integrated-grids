@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pypsa
 
-co2_limits = np.linspace(param.co2_limit_2019/2, 3*param.co2_limit_1990, 10)
+co2_limits = np.linspace(1e7, 2*param.co2_limit_1990, 10)
 df = pd.DataFrame(index=[key for key, df in param.technologies_france.items()])
 df_prices = pd.DataFrame()
 for co2_limit in co2_limits:

@@ -16,7 +16,7 @@ df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
 df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
 ### Costs
-costs = pd.read_csv('data/costs.csv', index_col='Technology')
+costs = pd.read_csv('data/costs2020.csv', index_col='Technology')
 for key in costs.index:
     costs.loc[key, 'CAPEX'] = utils.cost_conversion(costs.loc[key, 'CAPEX'], costs.loc[key, 'Currency year'])
     costs.loc[key, 'FOM'] = utils.cost_conversion(costs.loc[key, 'FOM'], costs.loc[key, 'Currency year'])
@@ -40,7 +40,7 @@ technologies_france = {
     "Hydro": df_hydro,
     "OCGT": None,
     "CCGT": None,
-    #"TACH2": None,
+    "TACH2": None,
 }
 
 
