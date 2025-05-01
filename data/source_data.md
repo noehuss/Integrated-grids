@@ -22,6 +22,20 @@ Columns:
 - Efficiency: [0, 1], efficiency of the technology 
 - CO2 emissions: Direct CO2 emissions in tCO2/MWh_th
 
+For the storage, the selected values are in the file 'costs_storage.csv'
+Columns:
+- Technology: Technology name of the power plant
+- Max capacity: In MW
+- CAPEX power: in EUR/MW
+- CAPEX energy: in EUR/MWh
+- OPEX fixed power: in EUR/MW/year
+- OPEX fixed energy: in EUR/MWh/year
+- Marginal cost: in EUR/MWh of produced electricity
+- lifetime: Expected lifetime of the technology in years
+- efficiency: [0, 1], efficiency of the technology. We make the assumption that efficiency_store = efficiency_dispatch = efficiency. The round trip efficiency is thus efficiency * efficiency.
+- CO2 emissions: Direct CO2 emissions in tCO2/MWh_th
+- Energy Power ratio: number of hours where the storage system can ideally store/discharge at full capacity.
+
 ## Technologies
 ### Nuclear
 Data are from the report Futurs Energétiques 2050, of the French TSO RTE. The costs and values considered are the ones for the EPR of Flamanville, commissionned in 2024. The reference hypothesis was considered.
@@ -52,3 +66,13 @@ Major Energy Storage Characteristics by Technology
 (Deloitte, 2015)
 
 
+- Max capa: MW
+- Capex power
+- Capex energy
+- Opex fixed power
+- Opex fixed energy
+- Marginal cost
+- Lifetime: year
+- Efficiency: %
+- CO2 emissions
+- Energy power ratio

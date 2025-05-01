@@ -3,14 +3,15 @@ import param
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pypsa
 
 years = np.arange(start=1980, stop=2015, step=2)
 df = pd.DataFrame(index=[key for key, df in param.technologies_france.items()])
 
 for year in years:
-    france_net = BusElectricity('FRA', year, technologies=param.technologies_france)
+    france_net = BusElectricity('FRA', year, technologies=param.technologies_france, network=pypsa.Network())
     france_net.add_co2_constraints(param.co2_limit_2019)
-    france_net.optimize()
+    france_net.optimize() 
     df[year] = france_net.return_capacity_mix()
 
 df = df.T

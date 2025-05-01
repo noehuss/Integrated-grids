@@ -152,6 +152,8 @@ class BusElectricity():
         
         fig, ax = plt.subplots(figsize=(6, 3))
 
+        colors = [item for key, item in param.colors.items()]
+
         p_by_gen.where(p_by_gen > 0).loc[f'{time}'].plot.area(ax=ax, linewidth = 0)
 
         charge = p_by_gen.where(p_by_gen < 0).dropna(how="all", axis=1).loc[time]
@@ -199,15 +201,15 @@ class NetworkElectricity():
 
 
 #france_net = BusElectricity('FRA', param.year, technologies=param.technologies_france)
-Countries = ['FRA', 'BEL', 'DEU']
-Europe_net = NetworkElectricity(param.year)
+# Countries = ['FRA', 'BEL', 'DEU']
+# Europe_net = NetworkElectricity(param.year)
 
-for country in Countries:
-    Europe_net.add_country(country, technologies=param.technologies_france)
-    if country != "FRA":
-        Europe_net.add_line("FRA", country, 0, 1, 1, 0, False)
+# for country in Countries:
+#     Europe_net.add_country(country, technologies=param.technologies_france)
+#     if country != "FRA":
+#         Europe_net.add_line("FRA", country, 0, 1, 1, 0, False)
 
-Europe_net.optimize()
+#Europe_net.optimize()
 
 # Add CO2 constraints
 # france_net.add_co2_constraints(param.co2_limit_2019)
