@@ -16,16 +16,20 @@ df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24 #Hourly value
 df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
 ### Costs
-costs = pd.read_csv('data/costs2020.csv', index_col='Technology')
+costs = pd.read_csv('data/costs2030.csv', index_col='Technology')
 for key in costs.index:
     costs.loc[key, 'CAPEX'] = utils.cost_conversion(costs.loc[key, 'CAPEX'], costs.loc[key, 'Currency year'])
     costs.loc[key, 'FOM'] = utils.cost_conversion(costs.loc[key, 'FOM'], costs.loc[key, 'Currency year'])
     costs.loc[key, 'VOM'] = utils.cost_conversion(costs.loc[key, 'VOM'], costs.loc[key, 'Currency year'])
 
+# Costs storage
+costs_store = pd.read_csv('data/cost_storage2030.csv', index_col='Technology')
+
 ### CO2 emissions
 #### Regarding the historical emissions of the electrical mix in France, we have:
 co2_limit_2019 = 20000000 #tCO2/year
 co2_limit_1990 = 45000000 #tCO2/year
+co2_limit_2030 = 12000000 #tCO2/year
 
 # Param
 ### Year simulation
@@ -43,6 +47,11 @@ technologies_france = {
     "TACH2": None,
 }
 
+technologies_storage_france = {
+    "PHS": None,
+    "Battery": None,
+}
+
 
 
 # Plot
@@ -54,7 +63,7 @@ colors = {"Nuclear":"#ffe66d",
           "OCGT":"#8d5f64",
           "CCGT":"#d1a9a5",
           "TACH2": "#cdd176",
-          "Storage1":"#ff6b6b",
-          "Storage2":"#1a535c",
+          "PHS":"#052F5F",
+          "Battery":"#06A77D",
           "tCO2":"#272932",
           "elec":"#AA968A"}

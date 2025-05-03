@@ -5,7 +5,7 @@ import utils
 import param
 
 class BusElectricity():
-    def __init__(self, country:str, year:int, technologies, network=pypsa.Network()):
+    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network()):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
@@ -32,7 +32,15 @@ class BusElectricity():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
                             param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
                             param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
-        
+        if storage_technologies:
+            for key, df in storage_technologies.items():
+                self.add_storage(key, param.costs_store.loc[key, 'Max capacity'], 
+                                param.costs_store.loc[key, 'CAPEX power'], param.costs_store.loc[key, 'CAPEX energy'], 
+                                param.costs_store.loc[key, 'OPEX fixed power'], param.costs_store.loc[key, 'OPEX fixed energy'], 
+                                param.costs_store.loc[key, 'Marginal cost'], param.costs_store.loc[key, 'lifetime'], 
+                                param.costs_store.loc[key, 'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
+                                param.costs_store.loc[key, 'Energy power ratio'])
+            
 
     def add_generator(self, technology_name:str, capex:float, opex_fixed:float ,opex_variable: float, fuel_cost:float, lifetime:int, efficiency:float, CO2_emissions:float, data_prod=None):
         """
@@ -70,16 +78,25 @@ class BusElectricity():
             sense="<=",
             constant=co2_limit)
 
-    def add_storage(self, technology_name: str, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
+    def add_storage(self, technology_name: str, max_cap: float, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name, co2_emissions = CO2_emissions)
         annualized_cost = utils.annuity(lifetime, 0.07)*(capex_en*energy_power_ratio + capex_pow + opex_fixed_en*energy_power_ratio + opex_fixed_pow)
 
-        self.network.add('StorageUnit', technology_name, 
+        if max_cap < 500000:
+            self.network.add('StorageUnit', technology_name, 
                          carrier = technology_name, bus = self.name, p_nom_extendable = True, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
                          efficiency_store = efficiency, efficiency_dispatch = efficiency)
+        
+        else:
+            self.network.add('StorageUnit', technology_name, 
+                         carrier = technology_name, bus = self.name, p_nom_max = max_cap, 
+                         capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
+                         cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
+                         efficiency_store = efficiency, efficiency_dispatch = efficiency)
+
         
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
@@ -105,15 +122,18 @@ class BusElectricity():
         origin = pd.Timestamp(f"{self.year}-01-01 00:00")
         start_index= int((start_date-origin).total_seconds()/3600)
         end_index= int((end_date-origin).total_seconds()/3600)
-        colors = ['yellow']
+        plt.figure()
         for i, storage_unit in enumerate(self.network.storage_units_t.p.columns):
-            plt.plot(self.network.storage_units_t.p[str(storage_unit)][start_index:end_index], color = colors[i], label = str(storage_unit))
+            plt.plot(self.network.storage_units_t.p[str(storage_unit)][start_index:end_index], color = param.colors[str(storage_unit)], label = str(storage_unit))
         plt.legend(fancybox=True, loc='best')
         plt.show()
 
-    def plot_pie(self):
+    def plot_pie(self, production:bool=True):
         labels = [generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt !=0].index]
-        sizes = [self.network.generators_t.p[generator].sum() for generator in labels]
+        if production:
+            sizes = [self.network.generators_t.p[generator].sum() for generator in labels]
+        else:
+            sizes = [self.network.generators.p_nom_opt[generator] for generator in labels]
         colors = [param.colors[generator] for generator in labels]
         plt.pie(sizes,
                 colors=colors,
@@ -145,23 +165,30 @@ class BusElectricity():
 
     def plot_dispatch(self, time):
         p_by_gen = self.network.generators_t.p.div(1e3)
-
+        print(p_by_gen)
         if not self.network.storage_units.empty:
             sto = self.network.storage_units_t.p.div(1e3)
             p_by_gen = pd.concat([p_by_gen, sto], axis =1)
         
         fig, ax = plt.subplots(figsize=(6, 3))
 
-        colors = [item for key, item in param.colors.items()]
-
-        p_by_gen.where(p_by_gen > 0).loc[f'{time}'].plot.area(ax=ax, linewidth = 0)
+        
+        gen = p_by_gen.where(p_by_gen >= 0).loc[f'{time}']
+        print(gen)
+        labels_p = [str(generator) for generator in gen.columns]
+        colors_p = [param.colors[generator] for generator in gen.columns]
+        ax.stackplot(gen.index, gen.T, colors=colors_p, labels=labels_p)
 
         charge = p_by_gen.where(p_by_gen < 0).dropna(how="all", axis=1).loc[time]
 
         if not charge.empty:
-            charge.plot.area(ax=ax, linewidth = 0)
+            labels_ch = [str(storage) for storage in charge.columns]
+            colors_ch = [param.colors[storage] for storage in charge.columns]
+            ax.stackplot(charge.index, charge.T, colors=colors_ch,labels=labels_ch)
         
-        self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
+        load = self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3)
+        ax.plot(load, label='Load', color='black')
+        #self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
 
         plt.legend(loc=(0.7, 0))
         ax.set_ylabel("GW")

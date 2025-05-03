@@ -1,9 +1,9 @@
 Technology,CAPEX,FOM,VOM,Fuel,Lifetime,Efficiency,CO2,Currency year,Source,Unnamed: 10
 Nuclear,11900000.0,100000.0,8.0,0.0,60.0,1.0,0.0,2020,RTE EPR FLAMANVILLE CO2:EDF ACV Nuclear,
-PV,750000.0,20000.0,0.0,0.0,25.0,1.0,0.0,2020,RTE Sol,
+PV,750000.0,11000.0,0.0,0.0,25.0,1.0,0.0,2020,RTE Sol,
 Wind Onshore,1300000.0,40000.0,0.0,0.0,25.0,1.0,0.0,2020,RTE Eolien terrestre,
 Wind Offshore,2600000.0,80000.0,0.0,0.0,20.0,1.0,0.0,2020,RTE Eolien offshore posé,
 Hydro,1000000.0,15000.0,0.0,0.0,70.0,1.0,0.0,2020,RTE Hydraulique hors step (contrainte potentiel max),
 OCGT,480390.0,8537.4,4.762,24.568,25.0,0.4,0.198,2015,Pypsa Technology-data,
 CCGT,931235.0,31005.4,4.6562,24.568,25.0,0.56,0.198,2015,Pypsa Technology-data,
-TACH2,800000.0,20000.0,120.0,0,30.0,0.5,0.0,2020,RTE,
+TACH2,800000.0,20000.0,0,120,30.0,0.5,0.0,2020,RTE,
