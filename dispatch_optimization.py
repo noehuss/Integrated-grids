@@ -83,7 +83,7 @@ class BusElectricity():
         self.network.add('Carrier', carrier_name, co2_emissions = CO2_emissions)
         annualized_cost = utils.annuity(lifetime, 0.07)*(capex_en*energy_power_ratio + capex_pow + opex_fixed_en*energy_power_ratio + opex_fixed_pow)
 
-        if max_cap < 500000:
+        if max_cap > 500000:
             self.network.add('StorageUnit', technology_name, 
                          carrier = technology_name, bus = self.name, p_nom_extendable = True, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
@@ -92,7 +92,7 @@ class BusElectricity():
         
         else:
             self.network.add('StorageUnit', technology_name, 
-                         carrier = technology_name, bus = self.name, p_nom_max = max_cap, 
+                         carrier = technology_name, bus = self.name, p_nom_extendable=True ,p_nom_max = max_cap, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
                          efficiency_store = efficiency, efficiency_dispatch = efficiency)

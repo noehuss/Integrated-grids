@@ -48,7 +48,8 @@ technologies_france = {
 }
 
 technologies_storage_france = {
-    "PHS": None,
+    "PHS_s": None,
+    "PHS_b": None,
     "Battery": None,
 }
 
@@ -66,4 +67,7 @@ colors = {"Nuclear":"#ffe66d",
           "PHS":"#052F5F",
           "Battery":"#06A77D",
           "tCO2":"#272932",
-          "elec":"#AA968A"}
+          "elec":"#AA968A",
+          "PHS_s":"#1789FC",
+          "PHS_b":"#296EB4"
+          }
