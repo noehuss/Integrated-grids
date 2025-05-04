@@ -6,7 +6,7 @@ import utils
 
 country = 'FRA'
 #france_net = BusElectricity(country, param.year, technologies=param.technologies_france)
-france_net = BusElectricity(country, param.year, technologies=param.technologies_france, storage_technologies= param.technologies_storage_france)
+france_net = BusElectricity(country, param.year, technologies=param.technologies_france, storage_technologies= param.technologies_storage_france, single_node=True)
 
 # Optimize
 france_net.add_co2_constraints(param.co2_limit_2030)
@@ -32,7 +32,11 @@ print(france_net.network.generators.marginal_cost)
 print(france_net.objective_value)
 print(france_net.electricity_price)
 
-utils.fourier_transform(france_net.network.storage_units_t.p['PHS_b'], color=param.colors['PHS_b'])
+
+utils.fourier_transform([france_net.network.storage_units_t.p['PHS_b'],
+                         france_net.network.storage_units_t.p['PHS_s'],
+                         france_net.network.storage_units_t.p['Battery']]
+                         ,color=param.colors['PHS_b'])
 utils.fourier_transform(france_net.network.storage_units_t.p['PHS_s'], color=param.colors['PHS_s'])
 
 #print([generator for generator in france_net.network.generators.loc[france_net.network.generators.p_nom_opt !=0].index])

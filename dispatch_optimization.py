@@ -9,15 +9,12 @@ import numpy as np
 
 
 class BusElectricity():
-<<<<<<< HEAD
-    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network()):
-=======
-    def __init__(self, country: str, year: int, technologies, network=pypsa.Network()):
->>>>>>> origin/Plot_multiple_countries
+    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network(), single_node:bool=True):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
         self.network = network
+        self.single_node = single_node
         hours_in_year = pd.date_range(f'{self.year}-01-01 00:00Z',
                                       f'{self.year}-12-31 23:00Z',
                                       freq='h')
@@ -42,7 +39,6 @@ class BusElectricity():
 
         for key, df in technologies.items():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
-<<<<<<< HEAD
                             param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
                             param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
         if storage_technologies:
@@ -54,11 +50,6 @@ class BusElectricity():
                                 param.costs_store.loc[key, 'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
                                 param.costs_store.loc[key, 'Energy power ratio'])
             
-=======
-                               param.costs.loc[key, 'VOM'], param.costs.loc[key,
-                                                                            'Fuel'], param.costs.loc[key, 'Lifetime'],
-                               param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
->>>>>>> origin/Plot_multiple_countries
 
     def add_generator(self, technology_name: str, capex: float, opex_fixed: float, opex_variable: float, fuel_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, data_prod=None):
         """
@@ -70,21 +61,23 @@ class BusElectricity():
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name,
                          co2_emissions=CO2_emissions, overwrite=True)
+        generator_name = technology_name if self.single_node else f"{self.country} {technology_name}"
+
         if data_prod is not None:
             if technology_name == 'Hydro':
                 P_max_pu = data_prod['Inflow pu'][[hour.strftime(
                     '2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
-                self.network.add('Generator', carrier=carrier_name, name=f"{self.country} {carrier_name}",
+                self.network.add('Generator', carrier=carrier_name, name=generator_name,
                                  bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
                                  marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max=1000*data_prod['Inflow [GW]'].max())
             else:
                 CF = data_prod[self.country][[hour.strftime(
                     '%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
-                self.network.add('Generator', carrier=carrier_name, name=f"{self.country} {carrier_name}",
+                self.network.add('Generator', carrier=carrier_name, name=generator_name,
                                  bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
                                  marginal_cost=marginal_cost, p_max_pu=CF.values)
         else:
-            self.network.add('Generator', carrier=carrier_name, name=f"{self.country} {carrier_name}",
+            self.network.add('Generator', carrier=carrier_name, name=generator_name,
                              bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
                              marginal_cost=marginal_cost, efficiency=efficiency)
 
@@ -100,40 +93,29 @@ class BusElectricity():
                          sense="<=",
                          constant=co2_limit)
 
-<<<<<<< HEAD
     def add_storage(self, technology_name: str, max_cap: float, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
-=======
-    def add_storage(self, technology_name: str, capex_pow: float, capex_en: float, opex_fixed_pow: float, opex_fixed_en: float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
->>>>>>> origin/Plot_multiple_countries
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions)
         annualized_cost = utils.annuity(lifetime, 0.07)*(
             capex_en*energy_power_ratio + capex_pow + opex_fixed_en*energy_power_ratio + opex_fixed_pow)
 
-        self.network.add('StorageUnit', technology_name,
-                         carrier=technology_name, bus=self.name, p_nom_extendable=True,
-                         capital_cost=annualized_cost, marginal_cost=marginal_cost/efficiency,
-                         cyclic_state_of_charge=True, max_hours=energy_power_ratio,
-                         efficiency_store=efficiency, efficiency_dispatch=efficiency)
+        storage_name = technology_name if self.single_node else f"{self.country} {technology_name}"
 
-<<<<<<< HEAD
         if max_cap > 500000:
-            self.network.add('StorageUnit', technology_name, 
+            self.network.add('StorageUnit', storage_name, 
                          carrier = technology_name, bus = self.name, p_nom_extendable = True, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
                          efficiency_store = efficiency, efficiency_dispatch = efficiency)
         
         else:
-            self.network.add('StorageUnit', technology_name, 
+            self.network.add('StorageUnit', storage_name, 
                          carrier = technology_name, bus = self.name, p_nom_extendable=True ,p_nom_max = max_cap, 
                          capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
                          cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
                          efficiency_store = efficiency, efficiency_dispatch = efficiency)
 
         
-=======
->>>>>>> origin/Plot_multiple_countries
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
         self.objective_value = self.network.objective / \
@@ -145,7 +127,7 @@ class BusElectricity():
         start_index = int((start_date-origin).total_seconds()/3600)
         end_index = int((end_date-origin).total_seconds()/3600)
         plt.plot(
-            self.network.loads_t.p['load'][start_index:end_index], color='black', label='Demand')
+            self.network.loads_t.p[f'{self.country} load'][start_index:end_index], color='black', label='Demand')
         producers = [
             generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt != 0].index]
         for i, generator in enumerate(producers):
@@ -160,7 +142,6 @@ class BusElectricity():
 
     def plot_storage(self, start_date, end_date):
         origin = pd.Timestamp(f"{self.year}-01-01 00:00")
-<<<<<<< HEAD
         start_index= int((start_date-origin).total_seconds()/3600)
         end_index= int((end_date-origin).total_seconds()/3600)
         plt.figure()
@@ -175,22 +156,6 @@ class BusElectricity():
             sizes = [self.network.generators_t.p[generator].sum() for generator in labels]
         else:
             sizes = [self.network.generators.p_nom_opt[generator] for generator in labels]
-=======
-        start_index = int((start_date-origin).total_seconds()/3600)
-        end_index = int((end_date-origin).total_seconds()/3600)
-        colors = ['yellow']
-        for i, storage_unit in enumerate(self.network.storage_units_t.p.columns):
-            plt.plot(self.network.storage_units_t.p[str(
-                storage_unit)][start_index:end_index], color=colors[i], label=str(storage_unit))
-        plt.legend(fancybox=True, loc='best')
-        plt.show()
-
-    def plot_pie(self):
-        labels = [
-            generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt != 0].index]
-        sizes = [self.network.generators_t.p[generator].sum()
-                 for generator in labels]
->>>>>>> origin/Plot_multiple_countries
         colors = [param.colors[generator] for generator in labels]
         plt.pie(sizes,
                 colors=colors,
@@ -230,26 +195,17 @@ class BusElectricity():
             p_by_gen = pd.concat([p_by_gen, sto], axis=1)
 
         fig, ax = plt.subplots(figsize=(6, 3))
-
-<<<<<<< HEAD
         
         gen = p_by_gen.where(p_by_gen >= 0).loc[f'{time}']
         print(gen)
         labels_p = [str(generator) for generator in gen.columns]
         colors_p = [param.colors[generator] for generator in gen.columns]
         ax.stackplot(gen.index, gen.T, colors=colors_p, labels=labels_p)
-=======
-        colors = [item for key, item in param.colors.items()]
-
-        p_by_gen.where(p_by_gen > 0).loc[f'{time}'].plot.area(
-            ax=ax, linewidth=0)
->>>>>>> origin/Plot_multiple_countries
 
         charge = p_by_gen.where(p_by_gen < 0).dropna(
             how="all", axis=1).loc[time]
 
         if not charge.empty:
-<<<<<<< HEAD
             labels_ch = [str(storage) for storage in charge.columns]
             colors_ch = [param.colors[storage] for storage in charge.columns]
             ax.stackplot(charge.index, charge.T, colors=colors_ch,labels=labels_ch)
@@ -257,12 +213,6 @@ class BusElectricity():
         load = self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3)
         ax.plot(load, label='Load', color='black')
         #self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
-=======
-            charge.plot.area(ax=ax, linewidth=0)
-
-        self.network.loads_t.p_set.sum(axis=1).loc[time].div(
-            1e3).plot(ax=ax, c="k", linewidth=1)
->>>>>>> origin/Plot_multiple_countries
 
         plt.legend(loc=(0.7, 0))
         ax.set_ylabel("GW")
@@ -284,7 +234,7 @@ class NetworkElectricity():
 
     def add_country(self, country_name, technologies):
         self.network = BusElectricity(
-            country=country_name, year=self.year, technologies=technologies).add_bus()
+            country=country_name, year=self.year, technologies=technologies, single_node=False).add_bus()
 
     def add_line(self, country0: str, country1: str, capacity: float, reactance: float, resistance: float, capital_cost: float, extendable: bool):
         self.network.add('Line', f"{country0}-{country1}",

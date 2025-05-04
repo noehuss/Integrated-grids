@@ -17,11 +17,7 @@ df_hydro = df_hydro.resample('h').ffill()
 df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24  # Hourly value
 df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
-<<<<<<< HEAD
 ### Costs
-=======
-# Costs
->>>>>>> origin/Plot_multiple_countries
 costs = pd.read_csv('data/costs2030.csv', index_col='Technology')
 for key in costs.index:
     costs.loc[key, 'CAPEX'] = utils.cost_conversion(
@@ -31,7 +27,6 @@ for key in costs.index:
     costs.loc[key, 'VOM'] = utils.cost_conversion(
         costs.loc[key, 'VOM'], costs.loc[key, 'Currency year'])
 
-<<<<<<< HEAD
 # Costs storage
 costs_store = pd.read_csv('data/cost_storage2030.csv', index_col='Technology')
 
@@ -40,12 +35,6 @@ costs_store = pd.read_csv('data/cost_storage2030.csv', index_col='Technology')
 co2_limit_2019 = 20000000 #tCO2/year
 co2_limit_1990 = 45000000 #tCO2/year
 co2_limit_2030 = 12000000 #tCO2/year
-=======
-# CO2 emissions
-# Regarding the historical emissions of the electrical mix in France, we have:
-co2_limit_2019 = 20000000  # tCO2/year
-co2_limit_1990 = 45000000  # tCO2/year
->>>>>>> origin/Plot_multiple_countries
 
 # Param
 # Year simulation
@@ -63,14 +52,12 @@ technologies_france = {
     "TACH2": None,
 }
 
-<<<<<<< HEAD
 technologies_storage_france = {
     "PHS_s": None,
     "PHS_b": None,
     "Battery": None,
 }
 
-=======
 # Countries
 countries = ['FRA', 'BEL', "DEU", "ITA", "ESP", "GBR"]
 country_coords = {
@@ -81,7 +68,6 @@ country_coords = {
     'ITA': (42.83, 12.83),
     'ESP': (40.40, -3.68)
 }
->>>>>>> origin/Plot_multiple_countries
 
 technologies_by_country = {}
 
@@ -162,17 +148,10 @@ colors = {"Nuclear": "#ffe66d",
           "OCGT": "#8d5f64",
           "CCGT": "#d1a9a5",
           "TACH2": "#cdd176",
-<<<<<<< HEAD
           "PHS":"#052F5F",
           "Battery":"#06A77D",
           "tCO2":"#272932",
           "elec":"#AA968A",
           "PHS_s":"#1789FC",
-          "PHS_b":"#296EB4"
+          "PHS_b":"#296EB4",
           }
-=======
-          "Storage1": "#ff6b6b",
-          "Storage2": "#1a535c",
-          "tCO2": "#272932",
-          "elec": "#AA968A"}
->>>>>>> origin/Plot_multiple_countries
