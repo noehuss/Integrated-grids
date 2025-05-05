@@ -9,7 +9,7 @@ import numpy as np
 
 
 class BusElectricity():
-    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network(), single_node:bool=True):
+    def __init__(self, country: str, year: int, technologies, storage_technologies=None, network=pypsa.Network(), single_node: bool = True):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
@@ -39,17 +39,21 @@ class BusElectricity():
 
         for key, df in technologies.items():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
-                            param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
-                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
+                               param.costs.loc[key, 'VOM'], param.costs.loc[key,
+                                                                            'Fuel'], param.costs.loc[key, 'Lifetime'],
+                               param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
         if storage_technologies:
             for key, df in storage_technologies.items():
-                self.add_storage(key, param.costs_store.loc[key, 'Max capacity'], 
-                                param.costs_store.loc[key, 'CAPEX power'], param.costs_store.loc[key, 'CAPEX energy'], 
-                                param.costs_store.loc[key, 'OPEX fixed power'], param.costs_store.loc[key, 'OPEX fixed energy'], 
-                                param.costs_store.loc[key, 'Marginal cost'], param.costs_store.loc[key, 'lifetime'], 
-                                param.costs_store.loc[key, 'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
-                                param.costs_store.loc[key, 'Energy power ratio'])
-            
+                self.add_storage(key, param.costs_store.loc[key, 'Max capacity'],
+                                 param.costs_store.loc[key,
+                                                       'CAPEX power'], param.costs_store.loc[key, 'CAPEX energy'],
+                                 param.costs_store.loc[key,
+                                                       'OPEX fixed power'], param.costs_store.loc[key, 'OPEX fixed energy'],
+                                 param.costs_store.loc[key,
+                                                       'Marginal cost'], param.costs_store.loc[key, 'lifetime'],
+                                 param.costs_store.loc[key,
+                                                       'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
+                                 param.costs_store.loc[key, 'Energy power ratio'])
 
     def add_generator(self, technology_name: str, capex: float, opex_fixed: float, opex_variable: float, fuel_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, data_prod=None):
         """
@@ -93,7 +97,7 @@ class BusElectricity():
                          sense="<=",
                          constant=co2_limit)
 
-    def add_storage(self, technology_name: str, max_cap: float, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
+    def add_storage(self, technology_name: str, max_cap: float, capex_pow: float, capex_en: float, opex_fixed_pow: float, opex_fixed_en: float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
         carrier_name = technology_name
         self.network.add('Carrier', carrier_name, co2_emissions=CO2_emissions)
         annualized_cost = utils.annuity(lifetime, 0.07)*(
@@ -102,20 +106,19 @@ class BusElectricity():
         storage_name = technology_name if self.single_node else f"{self.country} {technology_name}"
 
         if max_cap > 500000:
-            self.network.add('StorageUnit', storage_name, 
-                         carrier = technology_name, bus = self.name, p_nom_extendable = True, 
-                         capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
-                         cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
-                         efficiency_store = efficiency, efficiency_dispatch = efficiency)
-        
-        else:
-            self.network.add('StorageUnit', storage_name, 
-                         carrier = technology_name, bus = self.name, p_nom_extendable=True ,p_nom_max = max_cap, 
-                         capital_cost = annualized_cost, marginal_cost = marginal_cost/efficiency,
-                         cyclic_state_of_charge=True, max_hours = energy_power_ratio, 
-                         efficiency_store = efficiency, efficiency_dispatch = efficiency)
+            self.network.add('StorageUnit', storage_name,
+                             carrier=technology_name, bus=self.name, p_nom_extendable=True,
+                             capital_cost=annualized_cost, marginal_cost=marginal_cost/efficiency,
+                             cyclic_state_of_charge=True, max_hours=energy_power_ratio,
+                             efficiency_store=efficiency, efficiency_dispatch=efficiency)
 
-        
+        else:
+            self.network.add('StorageUnit', storage_name,
+                             carrier=technology_name, bus=self.name, p_nom_extendable=True, p_nom_max=max_cap,
+                             capital_cost=annualized_cost, marginal_cost=marginal_cost/efficiency,
+                             cyclic_state_of_charge=True, max_hours=energy_power_ratio,
+                             efficiency_store=efficiency, efficiency_dispatch=efficiency)
+
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
         self.objective_value = self.network.objective / \
@@ -142,20 +145,24 @@ class BusElectricity():
 
     def plot_storage(self, start_date, end_date):
         origin = pd.Timestamp(f"{self.year}-01-01 00:00")
-        start_index= int((start_date-origin).total_seconds()/3600)
-        end_index= int((end_date-origin).total_seconds()/3600)
+        start_index = int((start_date-origin).total_seconds()/3600)
+        end_index = int((end_date-origin).total_seconds()/3600)
         plt.figure()
         for i, storage_unit in enumerate(self.network.storage_units_t.p.columns):
-            plt.plot(self.network.storage_units_t.p[str(storage_unit)][start_index:end_index], color = param.colors[str(storage_unit)], label = str(storage_unit))
+            plt.plot(self.network.storage_units_t.p[str(
+                storage_unit)][start_index:end_index], color=param.colors[str(storage_unit)], label=str(storage_unit))
         plt.legend(fancybox=True, loc='best')
         plt.show()
 
-    def plot_pie(self, production:bool=True):
-        labels = [generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt !=0].index]
+    def plot_pie(self, production: bool = True):
+        labels = [
+            generator for generator in self.network.generators.loc[self.network.generators.p_nom_opt != 0].index]
         if production:
-            sizes = [self.network.generators_t.p[generator].sum() for generator in labels]
+            sizes = [self.network.generators_t.p[generator].sum()
+                     for generator in labels]
         else:
-            sizes = [self.network.generators.p_nom_opt[generator] for generator in labels]
+            sizes = [self.network.generators.p_nom_opt[generator]
+                     for generator in labels]
         colors = [param.colors[generator] for generator in labels]
         plt.pie(sizes,
                 colors=colors,
@@ -195,7 +202,7 @@ class BusElectricity():
             p_by_gen = pd.concat([p_by_gen, sto], axis=1)
 
         fig, ax = plt.subplots(figsize=(6, 3))
-        
+
         gen = p_by_gen.where(p_by_gen >= 0).loc[f'{time}']
         print(gen)
         labels_p = [str(generator) for generator in gen.columns]
@@ -208,11 +215,12 @@ class BusElectricity():
         if not charge.empty:
             labels_ch = [str(storage) for storage in charge.columns]
             colors_ch = [param.colors[storage] for storage in charge.columns]
-            ax.stackplot(charge.index, charge.T, colors=colors_ch,labels=labels_ch)
-        
+            ax.stackplot(charge.index, charge.T,
+                         colors=colors_ch, labels=labels_ch)
+
         load = self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3)
         ax.plot(load, label='Load', color='black')
-        #self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
+        # self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
 
         plt.legend(loc=(0.7, 0))
         ax.set_ylabel("GW")
@@ -246,6 +254,16 @@ class NetworkElectricity():
                          capital_cost=capital_cost,
                          s_nom_extendable=extendable)
 
+    def add_co2_constraints(self, co2_limit: float):
+        """Add a CO2 constraint, with a co2_limit in tCO2/year"""
+        self.co2_limit = co2_limit
+        self.network.add("GlobalConstraint",
+                         "co2_limit",
+                         # type="primary_energy",
+                         carrier_attribute="co2_emissions",
+                         sense="<=",
+                         constant=co2_limit)
+
     def optimize(self):
         self.network.optimize(solver_name='gurobi')
         # self.objective_value = self.network.objective/1000000 # in 10^6 € (or M€)
@@ -262,8 +280,25 @@ class NetworkElectricity():
     def energy(self):
         print(self.network.lines_t.p0.abs().sum(axis=0))
 
+    def energy_dir(self):
+        flows = self.network.lines_t.p0.sum(axis=0)
+        for line_name, flow in flows.items():
+            bus0 = self.network.lines.loc[line_name, "bus0"]
+            bus1 = self.network.lines.loc[line_name, "bus1"]
+            direction = f"{bus0} → {bus1}" if flow > 0 else f"{bus1} → {bus0}"
+            print(f"{line_name}: {(flow):.2f} MWh, Direction: {direction}")
+
     def line_capacity(self):
         print(self.network.lines.s_nom_opt)
+
+    def return_production_mix(self):
+        production = self.network.generators_t.p
+        carriers = self.network.generators.carrier
+        production_mix = pd.DataFrame(index=production.index)
+        for carrier in carriers.unique():
+            generators_of_carrier = carriers[carriers == carrier].index
+            production_mix[carrier] = production[generators_of_carrier].sum(axis=1)
+        return production_mix
 
     def plot_map(self):
         # Setup map projection
@@ -298,10 +333,15 @@ class NetworkElectricity():
             for country in self.network.buses.country.unique()
         }
 
-        # Coordinates for each country
-
         # Calculate transmitted energy for each line
         transmitted_energy = self.network.lines_t.p0.abs().sum(axis=0)
+        average_flow = self.network.lines_t.p0.mean(axis=0)
+        capacity_lines = self.network.lines.s_nom_opt
+
+        # Normalize transmitted energy for color mapping
+        energy_norm = plt.Normalize(
+            transmitted_energy.min(), transmitted_energy.max())
+        cmap = plt.cm.viridis
 
         # Draw transmission lines
         for i, line in self.network.lines.iterrows():
@@ -310,11 +350,42 @@ class NetworkElectricity():
             x0, y0 = bus0.x, bus0.y
             x1, y1 = bus1.x, bus1.y
 
+            flow = average_flow[i]
             energy = transmitted_energy[i]
-            width = energy / 2e6  # scale appropriately
+            capacity = capacity_lines[i]
+            width = capacity / 3e3  # scale appropriately
+            print("energy: ", energy, "   width: ",
+                  width, "    Capacity", capacity)
 
-            ax.plot([x0, x1], [y0, y1], color='magenta',
-                    linewidth=width, transform=ccrs.PlateCarree(), zorder=0)
+            if flow >= 0:
+                x_start, y_start = x0, y0
+                x_end, y_end = x1, y1
+            else:
+                x_start, y_start = x1, y1
+                x_end, y_end = x0, y0
+
+            # Plot the full transmission line as a plain line
+            ax.plot([x0, x1], [y0, y1],
+                    color=cmap(energy_norm(energy)), linewidth=width,
+                    transform=ccrs.PlateCarree(), zorder=1)
+
+            # Midpoint of the line
+            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+
+            # Arrow at the middle of the line in the right direction
+            mx, my = (x_start + x_end) / 2, (y_start + y_end) / 2
+            dx, dy = x_end - x_start, y_end - y_start
+            euclidian_norm = (dx**2 + dy**2)**0.5
+            dx /= euclidian_norm
+            dy /= euclidian_norm
+
+            # Arrow length
+            arrow_len = 0.01  # degrees or scaled appropriately
+            ax.arrow(mx - dx * arrow_len / 2, my - dy * arrow_len / 2,
+                     dx * arrow_len, dy * arrow_len,
+                     head_width=width/5, head_length=width/6,
+                     fc=cmap(energy_norm(energy)), ec=cmap(energy_norm(energy)),
+                     transform=ccrs.PlateCarree(), zorder=2)
 
         # Plot pie charts per country
         for country, tech_mix in gen.items():
@@ -328,10 +399,23 @@ class NetworkElectricity():
 
             lat, lon = param.country_coords[country]
             ax.pie(fracs, colors=tech_colors, radius=np.sqrt(
-                total) / 10, center=(lon, lat))
+                total) / 15, center=(lon, lat))
 
         # Set the extent to focus on Western Europe
-        ax.set_extent([-11, 25, 35, 61])  # Western Europe
+        ax.set_extent([-11, 18, 36, 57])  # Western Europe
+
+        # Add legend
+        legend_patches = [plt.Line2D(
+            [0], [0], color=param.colors[tech], lw=4, label=tech) for tech in techs]
+        plt.legend(handles=legend_patches,
+                   title="Technologies", loc='upper left')
+
+        # Add colorbar for energy transmitted
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=energy_norm)
+        sm.set_array([])
+        cbar = plt.colorbar(sm, ax=ax, orientation='vertical', pad=0.01)
+        cbar.set_label('Transmitted Energy')
+
         plt.show()
 
 

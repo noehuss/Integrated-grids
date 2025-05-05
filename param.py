@@ -17,7 +17,7 @@ df_hydro = df_hydro.resample('h').ffill()
 df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24  # Hourly value
 df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
-### Costs
+# Costs
 costs = pd.read_csv('data/costs2030.csv', index_col='Technology')
 for key in costs.index:
     costs.loc[key, 'CAPEX'] = utils.cost_conversion(
@@ -30,11 +30,11 @@ for key in costs.index:
 # Costs storage
 costs_store = pd.read_csv('data/cost_storage2030.csv', index_col='Technology')
 
-### CO2 emissions
-#### Regarding the historical emissions of the electrical mix in France, we have:
-co2_limit_2019 = 20000000 #tCO2/year
-co2_limit_1990 = 45000000 #tCO2/year
-co2_limit_2030 = 12000000 #tCO2/year
+# CO2 emissions
+# Regarding the historical emissions of the electrical mix in France, we have:
+co2_limit_2019 = 20000000  # tCO2/year
+co2_limit_1990 = 45000000  # tCO2/year
+co2_limit_2030 = 12000000  # tCO2/year
 
 # Param
 # Year simulation
@@ -130,7 +130,7 @@ for country in countries:
             "TACH2": None,
         }
 
-cost_HVAC_line = 442.14  # EUR/MW/km
+cost_HVAC_line = [0, 400]  # EUR/MW/km
 Distance_to_Paris = {
     'GBR': 350,
     'BEL': 265,
@@ -148,10 +148,10 @@ colors = {"Nuclear": "#ffe66d",
           "OCGT": "#8d5f64",
           "CCGT": "#d1a9a5",
           "TACH2": "#cdd176",
-          "PHS":"#052F5F",
-          "Battery":"#06A77D",
-          "tCO2":"#272932",
-          "elec":"#AA968A",
-          "PHS_s":"#1789FC",
-          "PHS_b":"#296EB4",
+          "PHS": "#052F5F",
+          "Battery": "#06A77D",
+          "tCO2": "#272932",
+          "elec": "#AA968A",
+          "PHS_s": "#1789FC",
+          "PHS_b": "#296EB4",
           }
