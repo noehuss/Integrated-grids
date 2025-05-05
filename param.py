@@ -152,6 +152,6 @@ colors = {"Nuclear": "#ffe66d",
           "Battery":"#06A77D",
           "tCO2":"#272932",
           "elec":"#AA968A",
-          "PHS_s":"#1789FC",
-          "PHS_b":"#296EB4",
+          "PHS_s":"#00747A",
+          "PHS_b":"#29DCFF",
           }

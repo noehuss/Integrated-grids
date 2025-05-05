@@ -120,7 +120,7 @@ class BusElectricity():
         self.network.optimize(solver_name='gurobi')
         self.objective_value = self.network.objective / \
             1000000  # in 10^6 € (or M€)
-        self.electricity_price = self.network.objective/self.network.loads_t.p.sum()
+        self.electricity_price = (self.network.objective/self.network.loads_t.p.sum())[0]
 
     def plot_line(self, start_date, end_date):
         origin = pd.Timestamp(f"{self.year}-01-01 00:00")
@@ -208,13 +208,13 @@ class BusElectricity():
         if not charge.empty:
             labels_ch = [str(storage) for storage in charge.columns]
             colors_ch = [param.colors[storage] for storage in charge.columns]
-            ax.stackplot(charge.index, charge.T, colors=colors_ch,labels=labels_ch)
+            ax.stackplot(charge.index, charge.T, colors=colors_ch)
         
         load = self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3)
         ax.plot(load, label='Load', color='black')
         #self.network.loads_t.p_set.sum(axis=1).loc[time].div(1e3).plot(ax=ax, c="k", linewidth = 1)
 
-        plt.legend(loc=(0.7, 0))
+        plt.legend()
         ax.set_ylabel("GW")
         # ax.set_ylim(-200, 200)
         plt.title(f'Optimal dispatch {time}')
