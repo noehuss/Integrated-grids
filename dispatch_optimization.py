@@ -9,7 +9,7 @@ import numpy as np
 
 
 class BusElectricity():
-    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network(), single_node:bool=True):
+    def __init__(self, country:str, year:int, technologies, storage_technologies = None, network=pypsa.Network(), single_node:bool=True, p_min_tech =None):
         self.country = country
         self.year = year
         self.name = f'{country} electriciy'
@@ -40,7 +40,7 @@ class BusElectricity():
         for key, df in technologies.items():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
                             param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
-                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
+                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df, p_min_tech)
         if storage_technologies:
             for key, df in storage_technologies.items():
                 self.add_storage(key, param.costs_store.loc[key, 'Max capacity'], 
@@ -51,7 +51,7 @@ class BusElectricity():
                                 param.costs_store.loc[key, 'Energy power ratio'])
             
 
-    def add_generator(self, technology_name: str, capex: float, opex_fixed: float, opex_variable: float, fuel_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, data_prod=None):
+    def add_generator(self, technology_name: str, capex: float, opex_fixed: float, opex_variable: float, fuel_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, data_prod=None, p_min_tech =None):
         """
         Add a generator in our network object.
         """
@@ -63,23 +63,43 @@ class BusElectricity():
                          co2_emissions=CO2_emissions, overwrite=True)
         generator_name = technology_name if self.single_node else f"{self.country} {technology_name}"
 
-        if data_prod is not None:
-            if technology_name == 'Hydro':
-                P_max_pu = data_prod['Inflow pu'][[hour.strftime(
-                    '2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
-                self.network.add('Generator', carrier=carrier_name, name=generator_name,
-                                 bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
-                                 marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max=1000*data_prod['Inflow [GW]'].max())
+        if p_min_tech is not None:
+            if data_prod is not None:
+                if technology_name == 'Hydro':
+                    P_max_pu = data_prod['Inflow pu'][[hour.strftime(
+                        '2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
+                    self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                    bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                    marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max=1000*data_prod['Inflow [GW]'].max(), p_nom_min=p_min_tech[generator_name])
+                else:
+                    CF = data_prod[self.country][[hour.strftime(
+                        '%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                    self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                    bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                    marginal_cost=marginal_cost, p_max_pu=CF.values, p_nom_min=p_min_tech[generator_name])
             else:
-                CF = data_prod[self.country][[hour.strftime(
-                    '%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
                 self.network.add('Generator', carrier=carrier_name, name=generator_name,
-                                 bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
-                                 marginal_cost=marginal_cost, p_max_pu=CF.values)
-        else:
-            self.network.add('Generator', carrier=carrier_name, name=generator_name,
-                             bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
-                             marginal_cost=marginal_cost, efficiency=efficiency)
+                                bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                marginal_cost=marginal_cost, efficiency=efficiency, p_nom_min=p_min_tech[generator_name])
+        
+        else :
+            if data_prod is not None:
+                if technology_name == 'Hydro':
+                    P_max_pu = data_prod['Inflow pu'][[hour.strftime(
+                        '2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
+                    self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                    bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                    marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max=1000*data_prod['Inflow [GW]'].max())
+                else:
+                    CF = data_prod[self.country][[hour.strftime(
+                        '%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                    self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                    bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                    marginal_cost=marginal_cost, p_max_pu=CF.values)
+            else:
+                self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                marginal_cost=marginal_cost, efficiency=efficiency)
 
     def add_bus(self) -> pypsa.Network:
         return self.network
