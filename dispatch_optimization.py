@@ -92,6 +92,81 @@ class BusElectricity():
                          carrier_attribute="co2_emissions",
                          sense="<=",
                          constant=co2_limit)
+    
+    def add_sector(self, sector_name: str, demand, storage: bool = False, bidirectional: bool = False):
+        self.network.add('Bus', f'FR {sector_name}', carrier = sector_name)
+        self.network.add('Load', f'{sector_name} demand', bus = f'FR {sector_name}', p_set = demand)
+
+        if sector_name == 'Hydrogen':
+            capex_electrolyser = param.capex_electrolyser
+            self.network.add('Link', 'Electrolyser', 
+                             bus0 = self.name, bus1 = f'FR {sector_name}', 
+                             carrier = 'electrolysis', 
+                             p_nom_extendable = True, efficiency = 0.7,
+                             capital_cost = capex_electrolyser)
+            if storage:
+                capex_store = param.capex_salt_cavern
+                self.network.add('Store', 'Hydrogen Storage', 
+                             bus = f'FR {sector_name}', 
+                             e_nom_extendable = True, e_initial = 0, 
+                             capital_cost = capex_store)
+                
+            if bidirectional:
+                CCGTH2_capex = param.capex_ccgt_H2
+                self.network.add('Link', 'CCGT H2', 
+                                 bus0 = f'FR {sector_name}', bus1 = self.name, 
+                                 carrier = 'CCGT H2',
+                                 p_nom_extendable = True, efficiency = 0.45,
+                                 capital_cost = CCGTH2_capex)
+    
+    def plot_electrolysis(self, start_date, end_date):
+        origin = pd.Timestamp(f"{self.year}-01-01 00:00")
+        start_index = int((start_date-origin).total_seconds()/3600)
+        end_index = int((end_date-origin).total_seconds()/3600)
+
+        # Calculate the difference between electrolysis production and hydrogen demand
+        net_hydrogen = -self.network.links_t.p1['Electrolyser'][start_index:end_index] - param.hourly_hydrogen_demand[start_index:end_index]
+
+        # Create the figure and axes
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+        ax2 = ax1.twinx()
+
+        # Plot electrolysis production and hydrogen demand difference
+        ax1.plot(net_hydrogen, label='Net Hydrogen (Electrolysis - Demand)', color='blue', linestyle='-', linewidth=2)
+        ax1.fill_between(net_hydrogen.index, 0, net_hydrogen, where=(net_hydrogen > 0), color='blue', alpha=0.2, label='Excess Hydrogen')
+
+        # Plot hydrogen storage evolution
+        ax2.plot(self.network.stores_t.e['Hydrogen Storage'][start_date:end_date], label='Hydrogen Storage', color='orange', linestyle='--', linewidth=2, marker='o')
+
+        # Customize the axes
+        ax1.set_xlabel('Time', fontsize=12)
+        ax1.set_ylabel('Net Hydrogen (MW)', fontsize=12, color='blue')
+        ax2.set_ylabel('Hydrogen Storage (MWh)', fontsize=12, color='orange')
+
+        # Add legends
+        ax1.legend(loc='upper left', fontsize=10, fancybox=True)
+        ax2.legend(loc='upper right', fontsize=10, fancybox=True)
+
+        # Add grid and improve layout
+        ax1.grid(linewidth=0.4, linestyle='--', alpha=0.7)
+        plt.title('Hydrogen Electrolysis and Storage Dynamics', fontsize=14, fontweight='bold')
+        plt.tight_layout()
+
+        # Show the plot
+        plt.show()
+        start_index = int((start_date-origin).total_seconds()/3600)
+        end_index = int((end_date-origin).total_seconds()/3600)
+        
+    
+    def plot_electrolysis_storage(self, start_date, end_date):
+        plt.plot(self.network.stores_t.e['Hydrogen Storage'].loc[start_date:end_date], label='Hydrogen storage', color = 'blue')
+        plt.legend(fancybox = 'True', loc = 'best')
+        plt.xlabel('Time')
+        plt.ylabel('Hydrogen storage')
+        plt.grid(linewidth='0.4', linestyle='--')
+        plt.show()
+
+
 
     def add_storage(self, technology_name: str, max_cap: float, capex_pow: float, capex_en: float, opex_fixed_pow:float, opex_fixed_en:float, marginal_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, energy_power_ratio: int):
         carrier_name = technology_name

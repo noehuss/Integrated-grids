@@ -17,6 +17,19 @@ df_hydro = df_hydro.resample('h').ffill()
 df_hydro['Inflow [GW]'] = df_hydro['Inflow [GWh]']/24  # Hourly value
 df_hydro['Inflow pu'] = df_hydro['Inflow [GW]']/df_hydro['Inflow [GW]'].max()
 
+demand = pd.read_csv(
+    'data/electricity_demand.csv', sep=';', index_col=0)
+demand.index = pd.to_datetime(demand.index)
+demand = demand['FRA'].loc['2015']
+print(demand.sum())
+
+#Hydrogen demand
+industrial_data = pd.read_csv('data/Industrial-1-shift Fabricated Metals.csv')
+industrial_data['utc_time'] = pd.date_range(start='2015-01-01 00:00:00', end='2015-12-31 23:00:00', freq='H')
+industrial_data.index = industrial_data['utc_time']
+    #To find the hydrogen demand, we normalize by the total demand over a year, predicted for 2030: 35TWh.
+hourly_hydrogen_demand = industrial_data['Power [kW]']*35000000/industrial_data['Power [kW]'].sum() 
+
 ### Costs
 costs = pd.read_csv('data/costs2030.csv', index_col='Technology')
 for key in costs.index:
@@ -29,6 +42,11 @@ for key in costs.index:
 
 # Costs storage
 costs_store = pd.read_csv('data/cost_storage2030.csv', index_col='Technology')
+
+#Costs hydrogen
+capex_electrolyser = utils.annuity(20, 0.07) * (641000 + 12000)
+capex_salt_cavern = utils.annuity(40, 0.07) * (350000 + 2000)
+capex_ccgt_H2 = utils.annuity(40, 0.07) * (1100000 + 40000)
 
 ### CO2 emissions
 #### Regarding the historical emissions of the electrical mix in France, we have:
