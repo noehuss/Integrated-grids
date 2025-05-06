@@ -36,20 +36,27 @@ class BusElectricity():
 
         self.objective_value = 0
         self.electricity_price = 0
+        self.technologies = technologies
+        self.populate_generators()
+        if storage_technologies:
+            self.storage_technologies = storage_technologies
+            self.populate_storage()
 
-        for key, df in technologies.items():
+    def populate_generators(self):
+        for key, df in self.technologies.items():
             self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
                             param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
                             param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], df)
-        if storage_technologies:
-            for key, df in storage_technologies.items():
-                self.add_storage(key, param.costs_store.loc[key, 'Max capacity'], 
-                                param.costs_store.loc[key, 'CAPEX power'], param.costs_store.loc[key, 'CAPEX energy'], 
-                                param.costs_store.loc[key, 'OPEX fixed power'], param.costs_store.loc[key, 'OPEX fixed energy'], 
-                                param.costs_store.loc[key, 'Marginal cost'], param.costs_store.loc[key, 'lifetime'], 
-                                param.costs_store.loc[key, 'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
-                                param.costs_store.loc[key, 'Energy power ratio'])
-            
+    
+    def populate_storage(self):
+        for key, df in self.storage_technologies.items():
+            self.add_storage(key, param.costs_store.loc[key, 'Max capacity'], 
+                            param.costs_store.loc[key, 'CAPEX power'], param.costs_store.loc[key, 'CAPEX energy'], 
+                            param.costs_store.loc[key, 'OPEX fixed power'], param.costs_store.loc[key, 'OPEX fixed energy'], 
+                            param.costs_store.loc[key, 'Marginal cost'], param.costs_store.loc[key, 'lifetime'], 
+                            param.costs_store.loc[key, 'efficiency'], param.costs_store.loc[key, 'CO2 emissions'],
+                            param.costs_store.loc[key, 'Energy power ratio'])
+        
 
     def add_generator(self, technology_name: str, capex: float, opex_fixed: float, opex_variable: float, fuel_cost: float, lifetime: int, efficiency: float, CO2_emissions: float, data_prod=None):
         """
@@ -226,6 +233,44 @@ class BusElectricity():
     def return_capacity_mix(self) -> pd.DataFrame:
         return self.network.generators.p_nom_opt
 
+
+class ExistingBusElectricity(BusElectricity):
+    def populate_generators(self):
+        for key, dict in self.technologies.items():
+            self.add_generator(key, param.costs.loc[key, 'CAPEX'], param.costs.loc[key, 'FOM'],
+                            param.costs.loc[key, 'VOM'], param.costs.loc[key, 'Fuel'], param.costs.loc[key, 'Lifetime'],
+                            param.costs.loc[key, 'Efficiency'], param.costs.loc[key, 'CO2'], p_min=dict['p_min'], p_max=dict['p_max'], data_prod=dict['df'])
+
+    def add_generator(self, technology_name, capex, opex_fixed, opex_variable, fuel_cost, lifetime, efficiency, CO2_emissions, p_min, p_max, data_prod=None):
+        """
+        Add a generator in our network object.
+        """
+        annualized_cost = utils.annuity(
+            lifetime, 0.07)*capex*(1+opex_fixed/capex)
+        marginal_cost = opex_variable + fuel_cost/efficiency
+        carrier_name = technology_name
+        self.network.add('Carrier', carrier_name,
+                         co2_emissions=CO2_emissions, overwrite=True)
+        generator_name = technology_name if self.single_node else f"{self.country} {technology_name}"
+        print(data_prod)
+        if data_prod is not None:
+            if technology_name == 'Hydro':
+                P_max_pu = data_prod['Inflow pu'][[hour.strftime(
+                    '2010-%m-%d %H:%M:%S') for hour in self.network.snapshots]]
+                p_max = max(p_min, 1000*data_prod['Inflow [GW]'].max())
+                self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                 bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                 marginal_cost=marginal_cost, p_max_pu=P_max_pu.values, p_nom_max=p_max, p_nom_min=p_min)
+            else:
+                CF = data_prod[self.country][[hour.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ') for hour in self.network.snapshots]]
+                self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                                 bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                                 marginal_cost=marginal_cost, p_max_pu=CF.values, p_nom_min = p_min, p_nom_max=p_max)
+        else:
+            self.network.add('Generator', carrier=carrier_name, name=generator_name,
+                             bus=self.name, p_nom_extendable=True, capital_cost=annualized_cost,
+                             marginal_cost=marginal_cost, efficiency=efficiency, p_nom_min = p_min, p_nom_max=p_max)
 
 class NetworkElectricity():
     def __init__(self, year: int):

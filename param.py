@@ -154,4 +154,17 @@ colors = {"Nuclear": "#ffe66d",
           "elec":"#AA968A",
           "PHS_s":"#00747A",
           "PHS_b":"#29DCFF",
+          "Nuclear Extension" : "#fcba03"
           }
+
+installed_capa = {
+    "Nuclear": 61.4*1000/2,
+    "PV": 19*1000,
+    "Wind Onshore": 21.8*1000,
+    "Wind Offshore": 0.8*1000,
+    "Hydro": 25.7*1000,
+    "OCGT": 3*1000,
+    "CCGT": 12.6*1000,
+    "TACH2": 0,
+    "Nuclear Extension" : 0
+}
