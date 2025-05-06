@@ -29,7 +29,6 @@ end_date_winter= pd.Timestamp(f"{param.year}-01-12 00:00")
 start_date_summer=pd.Timestamp(f"{param.year}-07-06 00:00")
 end_date_summer= pd.Timestamp(f"{param.year}-07-13 00:00")
 
-<<<<<<< HEAD
 # france_net.plot_line(start_date_winter, end_date_winter)
 # france_net.plot_line(start_date_summer, end_date_summer)
 france_net.plot_pie(True)
@@ -37,18 +36,6 @@ france_net.plot_pie(False)
 france_net.plot_duration_curve()
 # france_net.plot_storage(start_date_summer, end_date_summer)
 france_net.plot_dispatch(f'{param.year}-07')
-=======
-#france_net.plot_line(start_date_winter, end_date_winter)
-# france_net.plot_line(start_date_summer, end_date_summer)
-# france_net.plot_pie(False)
-# france_net.plot_duration_curve()
-# france_net.plot_storage(start_date_summer, end_date_summer)
-# france_net.plot_dispatch(f'{param.year}-07')
-france_net.plot_electrolysis(pd.Timestamp('2015-04-02 00:00'), pd.Timestamp('2015-04-05 00:00'))
-# france_net3.plot_electrolysis_storage('2015-04-03', '2015-04-06')
-
-
->>>>>>> origin/hydrogen
 
 print(france_net.network.generators.p_nom_opt)
 print(france_net.network.links.p_nom_opt)
@@ -67,7 +54,6 @@ print(france_net.network.buses_t.marginal_price.mean())
 
 france_net.network.storage_units.to_csv("results/storage_without_constraints.csv")
 
-<<<<<<< HEAD
 utils.fourier_transform([france_net.network.storage_units_t.p['PHS_b'],
                          france_net.network.storage_units_t.p['PHS_s'],
                          france_net.network.storage_units_t.p['Battery'],
@@ -78,11 +64,4 @@ utils.fourier_transform([france_net.network.storage_units_t.p['PHS_b'],
                                   param.colors["PV"], param.colors['Wind Offshore'], param.colors['Hydro']])
 
 
-=======
-utils.fourier_transform([france_net.network.links_t.p0['Electrolyser'],
-                       france_net.network.stores_t.e['Hydrogen Storage']]
-                          ,color=param.colors['PHS_b'])
-#utils.fourier_transform(france_net.network.storage_units_t.p['PHS_s'], color=param.colors['PHS_s'])
-#utils.fourier_transform(france_net.network.stores_t.e, color=param.colors['PHS_s'])
->>>>>>> origin/hydrogen
 #print([generator for generator in france_net.network.generators.loc[france_net.network.generators.p_nom_opt !=0].index])
