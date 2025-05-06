@@ -20,12 +20,13 @@ def cost_conversion(cost, year_from, year_to=2020, inflation=1.02):
     return cost * (inflation ** years)
 
 def fourier_transform(list_data:list[pd.Series], colors:list[str]):
-    columns = 3
-    rows = math.ceil(len(list_data)/columns)
+    max_columns = 3
+    columns = min(len(list_data), max_columns)
+    rows = math.ceil(len(list_data)/max_columns)
     fig, ax = plt.subplots(rows, columns, sharey=True)
     for i, data  in enumerate(list_data):
-        column = i%columns 
-        row = math.ceil((i+1)/columns) - 1   
+        column = i%max_columns 
+        row = math.ceil((i+1)/max_columns) - 1   
         index = (row, column) if rows > 1 else column
         t_sampling=1 # sampling rate, 1 data per hour
         x = np.arange(1,8761, t_sampling) 
