@@ -1,0 +1,15 @@
+,No hydrogen system, Hydrogen no storage, Hydrogen with storage, Hydrogen with storage and grid
+Total cost, 29.1, 33.4
+PHS_s,       7000.000000, 7000
+PHS_b,       1000.000000, 1000
+Battery,    11513.552664, 10043
+Nuclear,         18827.733700, 22523
+PV,             50085.602202, 64681
+Wind Onshore,         0.000000, 0
+Wind Offshore ,   53635.270855, 55830
+Hydro     ,       22644.875000, 22644
+OCGT  ,           17062.525151, 17799
+CCGT  ,           16202.326671, 16295
+TACH2 ,               0.000000, 0
+Electrolyser, 0, 16165
+
