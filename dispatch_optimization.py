@@ -252,7 +252,8 @@ class NetworkElectricity():
                          x=reactance,
                          r=resistance,
                          capital_cost=capital_cost,
-                         s_nom_extendable=extendable)
+                         s_nom_extendable=extendable,
+                         overwrite=True)
 
     def add_co2_constraints(self, co2_limit: float):
         """Add a CO2 constraint, with a co2_limit in tCO2/year"""

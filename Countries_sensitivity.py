@@ -3,10 +3,11 @@ from dispatch_optimization import NetworkElectricity
 import param
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 countries = param.countries
 technologies_by_country = param.technologies_by_country
-cost_HVAC_line = param.cost_HVAC_line
+cost_HVAC_line = np.linspace(0, 200, 11)  # EUR/MW/km
 
 # Dataframe to store the result
 df = pd.DataFrame()
@@ -22,6 +23,7 @@ for cost_line in cost_HVAC_line:
             Europe_net.add_line("FRA", country, 0, 1, 1,
                                 cost_line*param.Distance_to_Paris[country], True)
     Europe_net.optimize()
+    # Europe_net.plot_map()
 
     production_mix = Europe_net.return_production_mix() / 1E6
     df[cost_line] = production_mix.sum()
@@ -33,7 +35,24 @@ for cost_line in cost_HVAC_line:
 
 print(df)
 print(df_prices)
-# Europe_net.plot()
+
+
+fig, ax1 = plt.subplots()
+ax1.stackplot(cost_HVAC_line, df,
+              labels=[generator for generator in df.index], alpha=0.9,
+              colors=[param.colors[generator] for generator in df.index])
+ax1.set(xlabel='Cost HVAC line (€/MW/km)', ylabel='Production (TWh)')
+ax1.legend(loc='upper right')
+ax1.grid(linewidth='0.4', linestyle='--')
+ax2 = ax1.twinx()
+for index, row in df_prices.iterrows():
+    ax2.plot(cost_HVAC_line, row, label=f'{index} price', marker='o')
+ax2.set(xlabel='Cost HVAC line (€/MW/km)', ylabel='Electricity price (€/MWh)')
+ax2.legend(loc='upper left')
+ax2.set(ylim=(40, 70))
+plt.show()
+print(df_prices)
+
 
 # Result
 

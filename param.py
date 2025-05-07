@@ -130,7 +130,6 @@ for country in countries:
             "TACH2": None,
         }
 
-cost_HVAC_line = [0, 400]  # EUR/MW/km
 Distance_to_Paris = {
     'GBR': 350,
     'BEL': 265,
