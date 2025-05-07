@@ -1,8 +1,4 @@
 Technology,Max capacity,CAPEX power,CAPEX energy,OPEX fixed power,OPEX fixed energy,Marginal cost,lifetime,efficiency,CO2 emissions,Energy power ratio,
-<<<<<<< HEAD
 PHS_s,7000,1000000,0,15000,0,0,50,0.9,0,5
 PHS_b,1000,1000000,0,15000,0,0,50,0.9,0,50
-=======
-PHS,8000,1000000,0,15000,0,0,50,0.9,0,10
->>>>>>> c735ea9089d2e59df83edc1b6af02cd8480d2dd3
 Battery,1000000,855000,0,30000,0,0,15,0.92,0,4

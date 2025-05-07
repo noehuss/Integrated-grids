@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import math
 
 def annuity(n, r):
     """ Calculate the annuity factor for an asset with 
@@ -18,9 +19,15 @@ def cost_conversion(cost, year_from, year_to=2020, inflation=1.02):
     years = year_to - year_from
     return cost * (inflation ** years)
 
-def fourier_transform(list_data:list[pd.Series], color:str='orange'):
-    fig, ax = plt.subplots(1, len(list_data), sharey=True)
+def fourier_transform(list_data:list[pd.Series], colors:list[str]):
+    max_columns = 3
+    columns = min(len(list_data), max_columns)
+    rows = math.ceil(len(list_data)/max_columns)
+    fig, ax = plt.subplots(rows, columns, sharey=True)
     for i, data  in enumerate(list_data):
+        column = i%max_columns 
+        row = math.ceil((i+1)/max_columns) - 1   
+        index = (row, column) if rows > 1 else column
         t_sampling=1 # sampling rate, 1 data per hour
         x = np.arange(1,8761, t_sampling) 
         y = data
@@ -28,18 +35,18 @@ def fourier_transform(list_data:list[pd.Series], color:str='orange'):
         y_fft = np.fft.fft(y)/n #n for normalization    
         frq = np.arange(0,1/t_sampling,1/(t_sampling*n))        
         period = np.array([1/f for f in frq]) 
-        ax[i].semilogx(period[1:n//2],
+        ax[index].semilogx(period[1:n//2],
                     abs(y_fft[1:n//2])/np.max(abs(y_fft[1:n//2])), 
-                    color=color,
-                    linewidth=2)  
-        ax[i].set(xlabel='cycling period (hours)')
-
+                    color=colors[i],
+                    linewidth=2, label=data.name)  
+        ax[index].set(xlabel='cycling period (hours)')
         #We add lines indicating day, week, month
-        ax[i].axvline(x=24, color='lightgrey', linestyle='--')
-        ax[i].axvline(x=24*7, color='lightgrey', linestyle='--')
-        ax[i].axvline(x=24*30, color='lightgrey', linestyle='--')
-        ax[i].axvline(x=8760, color='lightgrey', linestyle='--') 
-        ax[i].text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
-        ax[i].text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
-        ax[i].text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+        ax[index].axvline(x=24, color='lightgrey', linestyle='--')
+        ax[index].axvline(x=24*7, color='lightgrey', linestyle='--')
+        ax[index].axvline(x=24*30, color='lightgrey', linestyle='--')
+        ax[index].axvline(x=8760, color='lightgrey', linestyle='--') 
+        ax[index].text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=9)
+        ax[index].text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=9)
+        ax[index].text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=9)
+        ax[index].legend()
     plt.show()
