@@ -147,8 +147,6 @@ for country in countries:
             "CCGT": None,
             "TACH2": None,
         }
-
-cost_HVAC_line = 442.14  # EUR/MW/km
 Distance_to_Paris = {
     'GBR': 350,
     'BEL': 265,
@@ -172,8 +170,7 @@ colors = {"Nuclear": "#ffe66d",
           "elec":"#AA968A",
           "PHS_s":"#00747A",
           "PHS_b":"#29DCFF",
-          "Nuclear Extension" : "#fcba03"
-          }
+          "Nuclear Extension" : "#fcba03"}
 
 installed_capa = {
     "Nuclear": 61.4*1000/2,
